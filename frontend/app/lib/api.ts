@@ -71,6 +71,14 @@ export type RiskItem = {
   recommendation: string;
   checks: string[];
   sources: RAGSource[];
+  title: string;
+  official_standard: string;
+  problem: string;
+  impact: string;
+  recommended_revision: string;
+  detected_value: string | null;
+  official_value: string | null;
+  difference: string | null;
 };
 
 export type DocumentExplanation = {
@@ -85,6 +93,9 @@ export type DocumentExplanation = {
   document_type: string;
   key_terms: Record<string, string>;
   risk_items: RiskItem[];
+  ocr_used: boolean;
+  ocr_confidence: number | null;
+  original_text: string;
 };
 
 export type RegionInfo = { region: string | null; name: Record<string, string> | null };

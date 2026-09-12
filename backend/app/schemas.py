@@ -200,6 +200,14 @@ class RiskItem(BaseModel):
     recommendation: str
     checks: list[str] = Field(default_factory=list)
     sources: list[RAGSource] = Field(default_factory=list)
+    title: str = ""
+    official_standard: str = ""
+    problem: str = ""
+    impact: str = ""
+    recommended_revision: str = ""
+    detected_value: str | None = None
+    official_value: str | None = None
+    difference: str | None = None
 
 
 class DocumentExplanation(BaseModel):
@@ -214,6 +222,9 @@ class DocumentExplanation(BaseModel):
     document_type: str = "unknown"
     key_terms: dict[str, str] = Field(default_factory=dict)
     risk_items: list[RiskItem] = Field(default_factory=list)
+    ocr_used: bool = False
+    ocr_confidence: float | None = None
+    original_text: str = ""
 
 
 class RegionInfo(BaseModel):

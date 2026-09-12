@@ -5,3 +5,7 @@ python-multipart==0.0.20
 openai>=1.66.0,<3.0.0
 psycopg[binary]>=3.2.0,<4.0.0
 pypdf>=5.0.0,<7.0.0
+paddlepaddle>=3.0.0
+paddleocr>=3.0.0
+pymupdf>=1.24.0
+sentence-transformers>=3.0.0

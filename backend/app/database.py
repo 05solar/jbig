@@ -12,6 +12,13 @@ from .schemas import Agency, Category, ConsultationResponse, FeedbackRequest, Gu
 logger = logging.getLogger(__name__)
 _unavailable_until = 0.0
 
+# Shared column list for rag_documents joins; keep in sync with _document_from_row.
+DOC_COLUMNS = "d.document_id,d.title,d.publisher,d.category,d.original_text,d.source_url,d.language,d.issued_at,d.collected_at,d.verified_at,d.version,d.content_hash,d.active,d.version_id,d.source_organization,d.source_domain,d.document_type,d.published_at,d.promulgated_at,d.effective_from,d.effective_until,d.retrieved_at,d.last_checked_at,d.next_check_at,d.index_version,d.status,d.previous_version_id,d.change_detected_at,d.reviewed_at,d.reviewed_by,d.review_note,d.fetch_failures,d.last_fetch_error"
+
+
+def _document_from_row(row) -> RAGDocument:
+    return RAGDocument(document_id=row[0], title=row[1], publisher=row[2], category=row[3], original_text=row[4], source_url=row[5], language=row[6], issued_at=row[7], collected_at=str(row[8]), verified_at=str(row[9]), version=row[10], content_hash=row[11], active=row[12], version_id=row[13] or "", source_organization=row[14] or row[2], source_domain=row[15] or "", document_type=row[16] or "guide", published_at=row[17], promulgated_at=row[18], effective_from=row[19], effective_until=row[20], retrieved_at=str(row[21]) if row[21] else None, last_checked_at=str(row[22]) if row[22] else None, next_check_at=str(row[23]) if row[23] else None, index_version=str(row[24] or "1"), status=row[25] or "active", previous_version_id=row[26], change_detected_at=str(row[27]) if row[27] else None, reviewed_at=str(row[28]) if row[28] else None, reviewed_by=row[29], review_note=row[30], fetch_failures=row[31] or 0, last_fetch_error=row[32])
+
 
 @contextmanager
 def connection() -> Iterator[object]:
@@ -48,6 +55,22 @@ def initialize_database() -> bool:
                     cursor.execute(f"ALTER TABLE rag_documents ADD COLUMN IF NOT EXISTS {column} {definition}")
                 cursor.execute("""CREATE TABLE IF NOT EXISTS rag_chunks (chunk_id text PRIMARY KEY, document_id text NOT NULL REFERENCES rag_documents(document_id) ON DELETE CASCADE, chunk_index integer NOT NULL, text text NOT NULL, embedding vector(%s), embedding_model text, content_hash text NOT NULL, active boolean NOT NULL DEFAULT true)""" % settings.embedding_dimensions)
                 cursor.execute("CREATE INDEX IF NOT EXISTS rag_chunks_document_idx ON rag_chunks (document_id, chunk_index)")
+                cursor.execute("ALTER TABLE rag_chunks ADD COLUMN IF NOT EXISTS search_tokens text[]")
+                cursor.execute("CREATE INDEX IF NOT EXISTS rag_chunks_search_tokens_idx ON rag_chunks USING gin (search_tokens)")
+                # Vector-dimension migration: only when a column holds no data —
+                # a populated column with the wrong dimension is a loud error, never auto-destroyed.
+                for table, column in (("rag_chunks", "embedding"), ("rag_version_chunks", "embedding"), ("guides", "embedding")):
+                    cursor.execute("SELECT atttypmod FROM pg_attribute WHERE attrelid=%s::regclass AND attname=%s", (table, column))
+                    row = cursor.fetchone()
+                    current_dim = row[0] if row else None
+                    if current_dim is not None and current_dim > 0 and current_dim != settings.embedding_dimensions:
+                        cursor.execute(f"SELECT count(*) FROM {table} WHERE {column} IS NOT NULL")
+                        populated = cursor.fetchone()[0]
+                        if populated == 0:
+                            cursor.execute(f"ALTER TABLE {table} ALTER COLUMN {column} TYPE vector({settings.embedding_dimensions})")
+                            logger.info("Migrated %s.%s to vector(%d)", table, column, settings.embedding_dimensions)
+                        else:
+                            logger.error("Embedding dimension mismatch on %s.%s: column is vector(%d) with %d populated rows but EMBEDDING_DIMENSIONS=%d. Re-embed or migrate manually.", table, column, current_dim, populated, settings.embedding_dimensions)
                 cursor.execute("""CREATE TABLE IF NOT EXISTS rag_document_versions (version_id text PRIMARY KEY, document_id text NOT NULL, data jsonb NOT NULL, content_hash text NOT NULL, status text NOT NULL, previous_version_id text, change_detected_at timestamptz, reviewed_at timestamptz, reviewed_by text, review_note text, created_at timestamptz NOT NULL DEFAULT now(), UNIQUE(document_id, content_hash))""")
                 cursor.execute("""CREATE TABLE IF NOT EXISTS rag_version_chunks (chunk_id text PRIMARY KEY, version_id text NOT NULL REFERENCES rag_document_versions(version_id) ON DELETE CASCADE, chunk_index integer NOT NULL, text text NOT NULL, content_hash text NOT NULL, embedding vector(%s), embedding_model text NOT NULL DEFAULT '')""" % settings.embedding_dimensions)
                 cursor.execute("""CREATE TABLE IF NOT EXISTS rag_index_state (id boolean PRIMARY KEY DEFAULT true, index_version bigint NOT NULL DEFAULT 1, updated_at timestamptz NOT NULL DEFAULT now())""")
@@ -131,38 +154,96 @@ def save_rag_document(document: RAGDocument, chunks: list[tuple[str, int, str, s
             current = cursor.fetchone()
             if current and current[0] == document.content_hash and current[1] == document.active and current[2] == document.version and current[3] == document.source_url:
                 return False
-            cursor.execute("""INSERT INTO rag_documents (document_id,title,publisher,category,original_text,source_url,language,issued_at,collected_at,verified_at,version,content_hash,active,version_id,source_organization,source_domain,document_type,published_at,promulgated_at,effective_from,effective_until,retrieved_at,last_checked_at,next_check_at,index_version,status,previous_version_id) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) ON CONFLICT (document_id) DO UPDATE SET title=EXCLUDED.title,publisher=EXCLUDED.publisher,category=EXCLUDED.category,original_text=EXCLUDED.original_text,source_url=EXCLUDED.source_url,language=EXCLUDED.language,issued_at=EXCLUDED.issued_at,collected_at=EXCLUDED.collected_at,verified_at=EXCLUDED.verified_at,version=EXCLUDED.version,content_hash=EXCLUDED.content_hash,active=EXCLUDED.active,version_id=EXCLUDED.version_id,source_organization=EXCLUDED.source_organization,source_domain=EXCLUDED.source_domain,document_type=EXCLUDED.document_type,published_at=EXCLUDED.published_at,promulgated_at=EXCLUDED.promulgated_at,effective_from=EXCLUDED.effective_from,effective_until=EXCLUDED.effective_until,retrieved_at=EXCLUDED.retrieved_at,last_checked_at=EXCLUDED.last_checked_at,next_check_at=EXCLUDED.next_check_at,index_version=EXCLUDED.index_version,status=EXCLUDED.status,previous_version_id=EXCLUDED.previous_version_id,updated_at=now()""", (document.document_id, document.title, document.publisher, document.category, document.original_text, document.source_url, document.language, document.issued_at, document.collected_at, document.verified_at, document.version, document.content_hash, document.active, document.version_id, document.source_organization, document.source_domain, document.document_type, document.published_at, document.promulgated_at, document.effective_from, document.effective_until, document.retrieved_at, document.last_checked_at, document.next_check_at, document.index_version, document.status, document.previous_version_id))
+            cursor.execute("""INSERT INTO rag_documents (document_id,title,publisher,category,original_text,source_url,language,issued_at,collected_at,verified_at,version,content_hash,active,version_id,source_organization,source_domain,document_type,published_at,promulgated_at,effective_from,effective_until,retrieved_at,last_checked_at,next_check_at,index_version,status,previous_version_id) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) ON CONFLICT (document_id) DO UPDATE SET title=EXCLUDED.title,publisher=EXCLUDED.publisher,category=EXCLUDED.category,original_text=EXCLUDED.original_text,source_url=EXCLUDED.source_url,language=EXCLUDED.language,issued_at=EXCLUDED.issued_at,collected_at=EXCLUDED.collected_at,verified_at=EXCLUDED.verified_at,version=EXCLUDED.version,content_hash=EXCLUDED.content_hash,active=EXCLUDED.active,version_id=EXCLUDED.version_id,source_organization=EXCLUDED.source_organization,source_domain=EXCLUDED.source_domain,document_type=EXCLUDED.document_type,published_at=EXCLUDED.published_at,promulgated_at=EXCLUDED.promulgated_at,effective_from=EXCLUDED.effective_from,effective_until=EXCLUDED.effective_until,retrieved_at=EXCLUDED.retrieved_at,last_checked_at=EXCLUDED.last_checked_at,next_check_at=EXCLUDED.next_check_at,index_version=EXCLUDED.index_version,status=EXCLUDED.status,previous_version_id=EXCLUDED.previous_version_id,updated_at=now()""", (document.document_id, document.title, document.publisher, document.category, document.original_text, document.source_url, document.language, document.issued_at, document.collected_at, document.verified_at, document.version, document.content_hash, document.active, document.version_id, document.source_organization, document.source_domain, document.document_type, document.published_at, document.promulgated_at, document.effective_from, document.effective_until, document.retrieved_at, document.last_checked_at, document.next_check_at, document.index_version, document.status, document.previous_version_id))
             cursor.execute("INSERT INTO rag_document_versions (version_id,document_id,data,content_hash,status,previous_version_id) VALUES (%s,%s,%s::jsonb,%s,%s,%s) ON CONFLICT (version_id) DO NOTHING", (document.version_id or f"{document.document_id}:{document.version}:{document.content_hash[:12]}", document.document_id, document.model_dump_json(), document.content_hash, "active" if document.active else "inactive", document.previous_version_id))
             cursor.execute("DELETE FROM rag_chunks WHERE document_id=%s", (document.document_id,))
+            from .rag import _tokens as rag_tokens
+            from .embedding_service import signature as embedding_signature
             for index, (chunk_id, chunk_index, text, chunk_hash) in enumerate(chunks):
                 vector = None
                 if embeddings and index < len(embeddings):
                     vector = "[" + ",".join(str(value) for value in embeddings[index]) + "]"
-                cursor.execute("INSERT INTO rag_chunks (chunk_id,document_id,chunk_index,text,embedding,embedding_model,content_hash,active) VALUES (%s,%s,%s,%s,%s::vector,%s,%s,%s)", (chunk_id, document.document_id, chunk_index, text, vector, settings.embedding_model if vector else None, chunk_hash, document.active))
+                tokens = list(rag_tokens(f"{document.title} {document.publisher} {text}"))
+                cursor.execute("INSERT INTO rag_chunks (chunk_id,document_id,chunk_index,text,embedding,embedding_model,content_hash,active,search_tokens) VALUES (%s,%s,%s,%s,%s::vector,%s,%s,%s,%s)", (chunk_id, document.document_id, chunk_index, text, vector, embedding_signature() if vector else None, chunk_hash, document.active, tokens))
         return True
-    except Exception:
+    except Exception as error:
+        logger.warning("save_rag_document failed for %s: %s", document.document_id, error)
         return False
+
+
+ACTIVE_FILTER = "d.active=true AND d.status IN ('active','approved','fetch_failed') AND c.active=true AND (d.effective_from IS NULL OR d.effective_from <= CURRENT_DATE::text) AND (d.effective_until IS NULL OR d.effective_until >= CURRENT_DATE::text)"
 
 
 def load_rag_chunks() -> list[tuple[RAGDocument, str, str, int]] | None:
     try:
         with connection() as conn, conn.cursor() as cursor:
-            cursor.execute("SELECT d.document_id,d.title,d.publisher,d.category,d.original_text,d.source_url,d.language,d.issued_at,d.collected_at,d.verified_at,d.version,d.content_hash,d.active,d.version_id,d.source_organization,d.source_domain,d.document_type,d.published_at,d.promulgated_at,d.effective_from,d.effective_until,d.retrieved_at,d.last_checked_at,d.next_check_at,d.index_version,d.status,d.previous_version_id,d.change_detected_at,d.reviewed_at,d.reviewed_by,d.review_note,d.fetch_failures,d.last_fetch_error,c.chunk_id,c.text,c.chunk_index FROM rag_documents d JOIN rag_chunks c ON c.document_id=d.document_id WHERE d.active=true AND d.status IN ('active','approved','fetch_failed') AND c.active=true AND (d.effective_from IS NULL OR d.effective_from <= CURRENT_DATE::text) AND (d.effective_until IS NULL OR d.effective_until >= CURRENT_DATE::text) ORDER BY d.document_id,c.chunk_index")
-            rows = cursor.fetchall()
-            return [(RAGDocument(document_id=row[0], title=row[1], publisher=row[2], category=row[3], original_text=row[4], source_url=row[5], language=row[6], issued_at=row[7], collected_at=str(row[8]), verified_at=str(row[9]), version=row[10], content_hash=row[11], active=row[12], version_id=row[13] or "", source_organization=row[14] or row[2], source_domain=row[15] or "", document_type=row[16] or "guide", published_at=row[17], promulgated_at=row[18], effective_from=row[19], effective_until=row[20], retrieved_at=str(row[21]) if row[21] else None, last_checked_at=str(row[22]) if row[22] else None, next_check_at=str(row[23]) if row[23] else None, index_version=str(row[24] or "1"), status=row[25] or "active", previous_version_id=row[26], change_detected_at=str(row[27]) if row[27] else None, reviewed_at=str(row[28]) if row[28] else None, reviewed_by=row[29], review_note=row[30], fetch_failures=row[31] or 0, last_fetch_error=row[32]), row[33], row[34], row[35]) for row in rows]
+            cursor.execute(f"SELECT {DOC_COLUMNS},c.chunk_id,c.text,c.chunk_index FROM rag_documents d JOIN rag_chunks c ON c.document_id=d.document_id WHERE {ACTIVE_FILTER} ORDER BY d.document_id,c.chunk_index")
+            return [(_document_from_row(row), row[33], row[34], row[35]) for row in cursor.fetchall()]
     except Exception:
         return None
 
 
-def search_rag_vectors(embedding: list[float], limit: int, threshold: float) -> list[tuple[RAGDocument, str, str, int, float]] | None:
+def fetch_lexical_candidates(query_tokens: list[str], category: Category | None, limit: int) -> list[tuple[RAGDocument, str, str, int]] | None:
+    """Small lexical candidate set from PostgreSQL via the search_tokens GIN index.
+
+    Rows are ranked by raw token overlap in SQL; exact scoring/ranking stays in
+    the existing Python scorer over this candidate set only. Returns None on DB
+    failure (callers degrade honestly), [] when nothing matches."""
+    if not query_tokens:
+        return []
+    try:
+        with connection() as conn, conn.cursor() as cursor:
+            category_clause = " AND d.category=%s" if category else ""
+            params = [list(query_tokens), list(query_tokens)] + ([category] if category else []) + [limit]
+            cursor.execute(f"SELECT {DOC_COLUMNS},c.chunk_id,c.text,c.chunk_index, cardinality(ARRAY(SELECT UNNEST(c.search_tokens) INTERSECT SELECT UNNEST(%s::text[]))) AS overlap FROM rag_documents d JOIN rag_chunks c ON c.document_id=d.document_id WHERE {ACTIVE_FILTER} AND c.search_tokens && %s::text[]{category_clause} ORDER BY overlap DESC LIMIT %s", params)
+            return [(_document_from_row(row), row[33], row[34], row[35]) for row in cursor.fetchall()]
+    except Exception as error:
+        logger.warning("Lexical candidate query failed: %s", type(error).__name__)
+        return None
+
+
+def search_rag_vectors(embedding: list[float], limit: int, threshold: float, model: str | None = None) -> list[tuple[RAGDocument, str, str, int, float]] | None:
     try:
         vector = "[" + ",".join(str(value) for value in embedding) + "]"
         with connection() as conn, conn.cursor() as cursor:
-            cursor.execute("""SELECT d.document_id,d.title,d.publisher,d.category,d.original_text,d.source_url,d.language,d.issued_at,d.collected_at,d.verified_at,d.version,d.content_hash,d.active,d.version_id,d.source_organization,d.source_domain,d.document_type,d.published_at,d.promulgated_at,d.effective_from,d.effective_until,d.retrieved_at,d.last_checked_at,d.next_check_at,d.index_version,d.status,d.previous_version_id,d.change_detected_at,d.reviewed_at,d.reviewed_by,d.review_note,d.fetch_failures,d.last_fetch_error,c.chunk_id,c.text,c.chunk_index,1-(c.embedding <=> %s::vector) AS similarity FROM rag_chunks c JOIN rag_documents d ON d.document_id=c.document_id WHERE d.active=true AND d.status IN ('active','approved','fetch_failed') AND c.active=true AND c.embedding IS NOT NULL AND c.embedding_model=%s AND 1-(c.embedding <=> %s::vector) >= %s AND (d.effective_from IS NULL OR d.effective_from <= CURRENT_DATE::text) AND (d.effective_until IS NULL OR d.effective_until >= CURRENT_DATE::text) ORDER BY c.embedding <=> %s::vector LIMIT %s""", (vector, settings.embedding_model, vector, threshold, vector, limit))
-            rows = cursor.fetchall()
-            return [(RAGDocument(document_id=row[0], title=row[1], publisher=row[2], category=row[3], original_text=row[4], source_url=row[5], language=row[6], issued_at=row[7], collected_at=str(row[8]), verified_at=str(row[9]), version=row[10], content_hash=row[11], active=row[12], version_id=row[13] or "", source_organization=row[14] or row[2], source_domain=row[15] or "", document_type=row[16] or "guide", published_at=row[17], promulgated_at=row[18], effective_from=row[19], effective_until=row[20], retrieved_at=str(row[21]) if row[21] else None, last_checked_at=str(row[22]) if row[22] else None, next_check_at=str(row[23]) if row[23] else None, index_version=str(row[24] or "1"), status=row[25] or "active", previous_version_id=row[26], change_detected_at=str(row[27]) if row[27] else None, reviewed_at=str(row[28]) if row[28] else None, reviewed_by=row[29], review_note=row[30], fetch_failures=row[31] or 0, last_fetch_error=row[32]), row[33], row[34], row[35], float(row[36])) for row in rows]
+            cursor.execute(f"SELECT {DOC_COLUMNS},c.chunk_id,c.text,c.chunk_index,1-(c.embedding <=> %s::vector) AS similarity FROM rag_chunks c JOIN rag_documents d ON d.document_id=c.document_id WHERE {ACTIVE_FILTER} AND c.embedding IS NOT NULL AND c.embedding_model=%s AND 1-(c.embedding <=> %s::vector) >= %s ORDER BY c.embedding <=> %s::vector LIMIT %s", (vector, model or settings.embedding_model, vector, threshold, vector, limit))
+            return [(_document_from_row(row), row[33], row[34], row[35], float(row[36])) for row in cursor.fetchall()]
     except Exception:
         return None
+
+
+def reembed_rag_chunks(embed_texts, tokenizer, signature: str, batch_size: int = 16) -> dict[str, int]:
+    """Regenerate embeddings and search_tokens for existing chunks.
+
+    Chunk text, document status, and versions are untouched — only the
+    embedding, embedding_model, and search_tokens columns are updated."""
+    summary = {"chunks": 0, "embedded": 0, "failed": 0}
+    try:
+        with connection() as conn, conn.cursor() as cursor:
+            cursor.execute("SELECT c.chunk_id, c.text, d.title, d.publisher FROM rag_chunks c JOIN rag_documents d ON d.document_id=c.document_id ORDER BY c.chunk_id")
+            rows = cursor.fetchall()
+    except Exception as error:
+        logger.error("reembed: could not read chunks: %s", error)
+        return summary
+    summary["chunks"] = len(rows)
+    for start in range(0, len(rows), batch_size):
+        batch = rows[start:start + batch_size]
+        vectors = embed_texts([text for _, text, _, _ in batch])
+        try:
+            with connection() as conn, conn.cursor() as cursor:
+                for index, (chunk_id, text, title, publisher) in enumerate(batch):
+                    tokens = tokenizer(f"{title} {publisher} {text}")
+                    if vectors and index < len(vectors):
+                        vector = "[" + ",".join(str(value) for value in vectors[index]) + "]"
+                        cursor.execute("UPDATE rag_chunks SET embedding=%s::vector, embedding_model=%s, search_tokens=%s WHERE chunk_id=%s", (vector, signature, list(tokens), chunk_id))
+                        summary["embedded"] += 1
+                    else:
+                        cursor.execute("UPDATE rag_chunks SET search_tokens=%s WHERE chunk_id=%s", (list(tokens), chunk_id))
+                        summary["failed"] += 1
+        except Exception as error:
+            logger.error("reembed: batch update failed: %s", error)
+            summary["failed"] += len(batch)
+    return summary
 
 
 def list_due_rag_documents() -> list[dict[str, str]] | None:

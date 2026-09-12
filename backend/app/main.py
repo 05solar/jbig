@@ -21,6 +21,9 @@ from .schemas import Agency, Category, ConsultationRequest, ConsultationResponse
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     initialize_database()
+    if settings.rag_embedding_warmup:
+        from . import embedding_service
+        embedding_service.warmup()
     yield
 
 

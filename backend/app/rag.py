@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import hashlib
 import ipaddress
+import logging
 import re
 import socket
 from dataclasses import dataclass
@@ -15,6 +16,8 @@ from urllib.parse import urlparse
 
 from .config import settings
 from .schemas import Category, RAGDocument, RAGSource
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -122,6 +125,13 @@ SAMPLE_DOCUMENTS = (
     register_document(document_id="moel-annual-leave", title="연차 유급휴가 사용 안내", publisher="고용노동부", category="labor", source_url="https://www.moel.go.kr/", text="법정 요건을 충족한 근로자는 연차 유급휴가를 사용할 수 있습니다. 근무 기간과 출근율에 따라 연차 일수가 달라지며, 사용하지 못한 연차의 처리 기준은 법령과 근로계약에 따릅니다. 연차 부여 여부가 불명확하면 근로계약서와 출근 기록을 준비해 고용노동부 1350에 확인합니다."),
     register_document(document_id="moel-resignation-severance", title="퇴직 절차와 퇴직금", publisher="고용노동부", category="labor", source_url="https://www.moel.go.kr/", text="퇴직을 결정하면 근로계약과 취업규칙에서 퇴직 통보 방법을 확인하고 서면 기록을 남기는 것이 좋습니다. 정해진 기간 이상 계속 근무한 근로자는 퇴직금 지급 대상이 될 수 있으며, 지급 기한이 지나도 받지 못하면 임금체불로 진정할 수 있습니다. 구체적인 지급 요건은 고용노동부 1350 또는 관할 노동관서에서 확인합니다."),
     register_document(document_id="moel-unpaid-wage-claim", title="임금체불 진정 절차", publisher="고용노동부", category="labor", source_url="https://1350.moel.go.kr/", text="임금체불이 발생하면 미지급 기간과 금액을 정리하고 근로계약서, 급여명세서, 출퇴근기록, 계좌내역을 보관합니다. 사업주에게 지급을 요청한 기록을 남기고, 해결되지 않으면 고용노동부 또는 관할 노동관서에 임금체불 진정을 제기할 수 있습니다. 진정 절차와 필요 서류는 고용노동부 1350에서 안내받을 수 있습니다."),
+    register_document(document_id="minimumwage-2026-notice", title="2026년 적용 최저임금 고시", publisher="최저임금위원회", category="labor", source_url="https://www.minimumwage.go.kr/", document_type="notice", effective_from="2026-01-01", text="2026년 1월 1일부터 12월 31일까지 적용되는 최저임금 고시 기준은 시간급 10,320원이다. 최저임금 기준은 사업의 종류 구분 없이 모든 사업장에 동일하게 적용된다. 시간급을 해당 연도 최저임금 미만으로 정한 근로계약의 해당 부분은 효력이 인정되지 않을 수 있으므로 계약서와 급여명세서의 시간급을 확인해야 한다."),
+    register_document(document_id="moel-overtime-premium-standard", title="연장·야간·휴일근로 가산수당 기준", publisher="고용노동부", category="labor", source_url="https://www.law.go.kr/", document_type="law", text="상시 5인 이상 사업장에서는 연장근로에 대하여 통상임금의 100분의 50 이상을 가산하여 지급해야 한다. 야간근로(오후 10시부터 다음 날 오전 6시 사이)와 휴일근로에도 가산수당 기준이 적용되며, 휴일근로가 8시간을 초과하면 초과분에 대하여 100분의 100 이상을 가산한다. 상시 5인 미만 사업장에는 가산수당 규정이 적용되지 않으므로 사업장 규모를 함께 확인해야 한다."),
+    register_document(document_id="moel-working-hours-standard", title="법정 근로시간과 휴게시간 기준", publisher="고용노동부", category="labor", source_url="https://www.law.go.kr/", document_type="law", text="1주간의 근로시간은 휴게시간을 제외하고 40시간을 초과할 수 없으며, 1일의 근로시간은 휴게시간을 제외하고 8시간을 초과할 수 없다. 당사자 간에 합의하면 1주 12시간을 한도로 연장근로를 할 수 있다. 사용자는 근로시간이 4시간인 경우 30분 이상, 8시간인 경우 1시간 이상의 휴게시간을 근로시간 도중에 주어야 한다."),
+    register_document(document_id="moel-weekly-holiday-standard", title="유급 주휴일 기준", publisher="고용노동부", category="labor", source_url="https://www.law.go.kr/", document_type="law", text="사용자는 1주 동안의 소정근로일을 개근한 근로자에게 1주에 평균 1회 이상의 유급휴일을 보장해야 한다. 이 유급 주휴일 기준은 4주 평균 1주 소정근로시간이 15시간 미만인 근로자에게는 적용되지 않는다. 주휴일을 무급으로 정한 계약 조항은 이 기준과 충돌할 수 있으므로 확인이 필요하다."),
+    register_document(document_id="moel-annual-leave-standard", title="연차 유급휴가 발생 기준", publisher="고용노동부", category="labor", source_url="https://www.law.go.kr/", document_type="law", text="사용자는 1년간 80퍼센트 이상 출근한 근로자에게 15일의 유급휴가를 주어야 한다. 계속 근로 기간이 1년 미만인 근로자에게는 1개월 개근 시 1일의 유급휴가를 주어야 한다. 이 연차 기준은 상시 5인 이상 사업장에 적용되며, 입사 후 1년 동안 연차가 전혀 없다고 정한 조항은 기준과 충돌할 수 있다."),
+    register_document(document_id="moel-wage-cut-penalty-prohibition", title="임금 전액 지급과 위약금 예정 금지", publisher="고용노동부", category="labor", source_url="https://www.law.go.kr/", document_type="law", text="임금은 통화로 직접 근로자에게 전액을 지급해야 하며, 법령 또는 단체협약에 특별한 규정이 있는 경우가 아니면 일부를 빼고 지급할 수 없다. 사용자가 근로자의 동의 없이 임금을 일방적으로 낮추는 것은 이 기준과 충돌할 수 있다. 또한 근로계약 불이행에 대한 위약금 또는 손해배상액을 미리 정하는 계약은 체결할 수 없다."),
+    register_document(document_id="moel-internal-rules-limit", title="취업규칙과 법령의 관계", publisher="고용노동부", category="labor", source_url="https://www.law.go.kr/", document_type="law", text="취업규칙이나 회사 내부규정은 법령이나 해당 사업장에 적용되는 단체협약과 어긋나서는 안 된다. 내부규정이 법령보다 우선한다고 정한 조항이 있어도 강행 법령의 기준을 밑도는 부분은 효력이 인정되지 않을 수 있다. 근로계약 중 법정 기준에 미치지 못하는 부분에도 같은 원칙이 적용된다."),
 )
 
 
@@ -287,7 +297,70 @@ def merge_scores(lexical: float | None, vector: float | None) -> float:
     return lexical if lexical is not None else vector or 0.0
 
 
+# Short-TTL result cache for repeated queries (document review fires several per upload).
+_search_cache: dict[tuple, tuple[float, list]] = {}
+_SEARCH_CACHE_TTL_SECONDS = 60.0
+
+
+def search_rag_db(question: str, *, category: Category | None = None, limit: int | None = None) -> list[tuple[OfficialChunk, float]] | None:
+    """Shared PostgreSQL/pgvector hybrid search for the chatbot and document review.
+
+    Small candidate sets come from the DB (GIN token overlap + pgvector ANN);
+    the full corpus is never loaded into Python. Scoring, merging, ranking, and
+    thresholds reuse the existing policy so search semantics are unchanged.
+    Returns None when the database is unreachable."""
+    import time as _time
+    from . import embedding_service
+    from .database import fetch_lexical_candidates, search_rag_vectors
+    top_k = limit or settings.rag_top_k
+    cache_key = (re.sub(r"\s+", " ", question.strip().casefold()), category, top_k, embedding_service.signature())
+    cached = _search_cache.get(cache_key)
+    if cached and _time.time() - cached[0] < _SEARCH_CACHE_TTL_SECONDS:
+        return list(cached[1])
+    started = _time.perf_counter()
+    query_tokens = sorted(_tokens(question))
+    t_lex = _time.perf_counter()
+    lexical_rows = fetch_lexical_candidates(query_tokens, category, settings.rag_db_lexical_candidates)
+    lexical_ms = (_time.perf_counter() - t_lex) * 1000
+    t_emb = _time.perf_counter()
+    query_vector = embedding_service.embed_text(redact_for_embedding(normalize_text(question)))
+    embedding_ms = (_time.perf_counter() - t_emb) * 1000
+    vector_rows = None
+    vector_ms = 0.0
+    if query_vector is not None:
+        t_vec = _time.perf_counter()
+        vector_rows = search_rag_vectors(query_vector, settings.rag_db_vector_candidates, settings.rag_similarity_threshold, model=embedding_service.signature())
+        vector_ms = (_time.perf_counter() - t_vec) * 1000
+    if lexical_rows is None and vector_rows is None:
+        return None
+    t_rank = _time.perf_counter()
+    candidates = {chunk_id: OfficialChunk(document, chunk_id, text, index) for document, chunk_id, text, index in (lexical_rows or [])}
+    lexical = search_official_documents(question, category=category, limit=top_k, chunks=list(candidates.values()))
+    merged: dict[str, tuple[OfficialChunk, float | None, float | None]] = {chunk.chunk_id: (chunk, score, None) for chunk, score in lexical}
+    for document, chunk_id, text, index, score in (vector_rows or []):
+        if category is not None and document.category != category:
+            continue
+        existing = merged.get(chunk_id)
+        merged[chunk_id] = (existing[0], existing[1], score) if existing else (OfficialChunk(document, chunk_id, text, index), None, score)
+    scored = [(chunk, round(merge_scores(lex, vec), 3)) for chunk, lex, vec in merged.values()]
+    scored = [(chunk, relevance) for chunk, relevance in scored if relevance >= settings.rag_similarity_threshold]
+    _stable_rank(scored, question)
+    result = scored[:top_k]
+    merge_ms = (_time.perf_counter() - t_rank) * 1000
+    total_ms = (_time.perf_counter() - started) * 1000
+    log = logger.info if settings.rag_debug_enabled else logger.debug
+    log("rag_db_search total=%.1fms embedding=%.1fms lexical=%.1fms vector=%.1fms merge=%.1fms candidates=%d results=%d", total_ms, embedding_ms, lexical_ms, vector_ms, merge_ms, len(candidates) + len(vector_rows or []), len(result))
+    if len(_search_cache) >= 128:
+        _search_cache.pop(min(_search_cache, key=lambda key: _search_cache[key][0]), None)
+    _search_cache[cache_key] = (_time.time(), list(result))
+    return result
+
+
 def search_index(question: str, *, category: Category | None = None, limit: int | None = None) -> list[tuple[OfficialChunk, float]]:
+    db_result = search_rag_db(question, category=category, limit=limit)
+    if db_result is not None:
+        return db_result
+    # Development fallback (database unreachable): in-memory corpus search.
     lexical = search_official_documents(question, category=category, limit=limit, chunks=indexed_chunks())
     merged: dict[str, tuple[OfficialChunk, float | None, float | None]] = {chunk.chunk_id: (chunk, score, None) for chunk, score in lexical}
     if settings.openai_api_key:
@@ -371,15 +444,13 @@ def index_documents(*, documents: tuple[tuple[RAGDocument, list[OfficialChunk]],
     from .database import save_rag_document
     indexed = 0
     skipped = 0
-    if embedding_factory is None and settings.openai_api_key:
-        try:
-            from .embeddings import create_embeddings
-            embedding_factory = create_embeddings
-        except Exception:
-            embedding_factory = None
+    if embedding_factory is None:
+        from . import embedding_service
+        if embedding_service.signature() != "none":
+            embedding_factory = embedding_service.embed_texts
     for document, chunks in documents:
         embeddings = None
-        if embedding_factory and settings.openai_api_key:
+        if embedding_factory:
             try:
                 embeddings = embedding_factory([redact_for_embedding(chunk.text) for chunk in chunks])
             except Exception:
