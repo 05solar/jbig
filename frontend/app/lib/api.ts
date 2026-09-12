@@ -62,7 +62,7 @@ export type ConsultationResponse = {
   follow_up_questions: string[];
 };
 
-export type RAGSource = { document_id: string; chunk_id: string; title: string; publisher: string; url: string; verified_at: string; relevance: number; document_version: string; published_at: string | null; collected_at: string | null; effective_from: string | null; last_checked_at: string | null; freshness_type: "versioned" | "periodically_checked" | "live_verification_required"; freshness_status: string; document_type: string; authority_score: number; trust_level: "high" | "medium" | "low"; trust_reasons: string[] };
+export type RAGSource = { document_id: string; chunk_id: string; title: string; publisher: string; url: string; url_specific: boolean; display_title: string | null; display_publisher: string | null; source_summary: string | null; verified_at: string; relevance: number; document_version: string; published_at: string | null; collected_at: string | null; effective_from: string | null; last_checked_at: string | null; freshness_type: "versioned" | "periodically_checked" | "live_verification_required"; freshness_status: string; document_type: string; authority_score: number; trust_level: "high" | "medium" | "low"; trust_reasons: string[] };
 
 export type RiskItem = {
   level: "SAFE" | "CHECK" | "WARNING";

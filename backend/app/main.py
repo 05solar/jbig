@@ -139,7 +139,8 @@ def create_consultation(payload: ConsultationRequest, request: Request) -> Consu
         result = select_guide_semantically(result, payload.question, safety_identifier=client_hash)
         result = generate_grounded_answer(result, payload.question, safety_identifier=client_hash)
         if not result.guides and not matches:
-            result = result.model_copy(update={"answer_mode": "insufficient_evidence", "evidence_sufficient": False, "follow_up_questions": ["어떤 기관에 문의해야 하는지 함께 확인할 수 있도록 지역과 상황을 조금 더 알려주세요."] if result.language == "ko" else ["Please share your region and a little more detail so we can direct you to the right agency."]})
+            follow_ups = {"ko": ["어떤 기관에 문의해야 하는지 함께 확인할 수 있도록 지역과 상황을 조금 더 알려주세요."], "en": ["Please share your region and a little more detail so we can direct you to the right agency."], "vi": ["Vui lòng cho biết khu vực và thêm một chút thông tin để chúng tôi hướng dẫn đúng cơ quan."]}
+            result = result.model_copy(update={"answer_mode": "insufficient_evidence", "evidence_sufficient": False, "follow_up_questions": follow_ups.get(result.language, follow_ups["ko"])})
     result = result.model_copy(update={"consultation_id": uuid4().hex})
     set_cached(key, result)
     save_consultation(result, key)

@@ -55,6 +55,16 @@ def validate_official_url(url: str) -> str:
     return url
 
 
+def is_specific_source_url(url: str) -> bool:
+    """True when the URL points at a specific document page, not an agency homepage.
+
+    A source link must lead to the actual material used in the answer; a bare
+    domain root is treated as generic so the UI can disable the link instead of
+    sending users to the wrong page."""
+    parsed = urlparse(url)
+    return bool(parsed.path.strip("/")) or bool(parsed.query)
+
+
 def normalize_text(text: str) -> str:
     text = re.sub(r"\r\n?", "\n", text)
     text = re.sub(r"[ \t]+", " ", text)
@@ -94,6 +104,8 @@ def split_chunks(text: str, chunk_size: int = 900, overlap: int = 120) -> list[s
 
 def register_document(*, document_id: str, title: str, publisher: str, category: Category, text: str, source_url: str, language: str = "ko", issued_at: str | None = None, verified_at: str | None = None, version: str = "1", active: bool = True, document_type: str | None = None, published_at: str | None = None, promulgated_at: str | None = None, effective_from: str | None = None, effective_until: str | None = None, status: str | None = None, previous_version_id: str | None = None) -> tuple[RAGDocument, list[OfficialChunk]]:
     validate_official_url(source_url)
+    if not is_specific_source_url(source_url):
+        logger.warning("register_document %s: source_url is a generic homepage (%s); the UI will disable this source link until a specific document URL is provided", document_id, source_url)
     normalized = normalize_text(text)
     if not normalized:
         raise ValueError("Document text cannot be empty")
@@ -119,19 +131,19 @@ SAMPLE_DOCUMENTS = (
     register_document(document_id="gov24-address-change-report", title="체류지 변경 신고 안내", publisher="정부24", category="residency", source_url="https://www.gov.kr/", text="이사 등으로 체류지가 변경되면 정해진 기간 안에 새로운 체류지의 관할 기관에 체류지 변경 신고를 해야 합니다. 여권과 외국인등록증, 새 주소를 확인할 수 있는 서류를 준비하며, 온라인 신고 가능 여부는 정부24와 하이코리아에서 확인합니다. 신고 기한을 넘기면 불이익이 있을 수 있으므로 이사 후 바로 확인합니다."),
     register_document(document_id="hikorea-stay-extension-application", title="체류기간 연장 허가 신청 절차", publisher="하이코리아", category="residency", source_url="https://www.hikorea.go.kr/", text="체류기간 연장 허가는 체류 만료일 이전에 신청해야 하며, 온라인 전자민원 또는 방문 예약을 통해 접수할 수 있습니다. 여권, 외국인등록증, 통합신청서, 체류자격별 입증서류와 수수료를 준비합니다. 연장 가능 여부와 요건은 체류자격과 개인 사정에 따라 다르므로 1345에서 확인합니다."),
     register_document(document_id="hikorea-status-change-permission", title="체류자격 변경 허가 안내", publisher="하이코리아", category="residency", source_url="https://www.hikorea.go.kr/", text="유학, 취업 등 활동 목적이 바뀌면 새 활동을 시작하기 전에 체류자격 변경 허가를 받아야 합니다. 희망 자격의 요건과 필수 서류를 확인하고 통합신청서와 입증서류, 수수료를 준비합니다. 변경 허가 전에는 현재 체류자격의 활동 범위를 지켜야 하며, 심사 기준은 개인 상황에 따라 다릅니다."),
-    register_document(document_id="minimumwage-check-guide", title="최저임금 확인 방법", publisher="최저임금위원회", category="labor", source_url="https://www.minimumwage.go.kr/", text="최저임금은 매년 고시되며 원칙적으로 모든 근로자에게 적용됩니다. 근로계약서와 급여명세서에서 기본급과 소정근로시간을 확인하고, 시간당 임금이 해당 연도 최저임금 이상인지 비교합니다. 최저임금에 포함되는 임금 항목은 법령 기준에 따라 판단되므로 불명확하면 고용노동부 1350에 상담합니다."),
+    register_document(document_id="minimumwage-check-guide", title="최저임금 확인 방법", publisher="최저임금위원회", category="labor", source_url="https://www.minimumwage.go.kr/minWage/policy/decisionMain.do", text="최저임금은 매년 고시되며 원칙적으로 모든 근로자에게 적용됩니다. 근로계약서와 급여명세서에서 기본급과 소정근로시간을 확인하고, 시간당 임금이 해당 연도 최저임금 이상인지 비교합니다. 최저임금에 포함되는 임금 항목은 법령 기준에 따라 판단되므로 불명확하면 고용노동부 1350에 상담합니다."),
     register_document(document_id="moel-overtime-limit", title="연장근로와 근로시간 한도", publisher="고용노동부", category="labor", source_url="https://www.moel.go.kr/", text="법정 근로시간을 넘는 연장근로는 당사자 합의 등 법령상 요건을 갖추어야 하며 한도가 있습니다. 하루 근무시간과 주간 근로시간을 출퇴근기록으로 정리하고, 연장근로 수당이 지급되는지 급여명세서를 확인합니다. 장시간 근로나 수당 미지급이 의심되면 고용노동부 1350 또는 관할 노동관서에 상담합니다."),
     register_document(document_id="moel-holiday-work", title="휴일 근무와 휴일수당", publisher="고용노동부", category="labor", source_url="https://www.moel.go.kr/", text="근로자에게는 법령과 근로계약에 따른 휴일이 보장되며, 휴일 근무에는 가산수당이 적용될 수 있습니다. 휴일에 일한 날짜와 시간을 기록하고 급여명세서에서 수당 지급 여부를 확인합니다. 휴일 부여와 수당 기준은 사업장과 계약 내용에 따라 다르므로 고용노동부 1350에 상담합니다."),
     register_document(document_id="moel-annual-leave", title="연차 유급휴가 사용 안내", publisher="고용노동부", category="labor", source_url="https://www.moel.go.kr/", text="법정 요건을 충족한 근로자는 연차 유급휴가를 사용할 수 있습니다. 근무 기간과 출근율에 따라 연차 일수가 달라지며, 사용하지 못한 연차의 처리 기준은 법령과 근로계약에 따릅니다. 연차 부여 여부가 불명확하면 근로계약서와 출근 기록을 준비해 고용노동부 1350에 확인합니다."),
     register_document(document_id="moel-resignation-severance", title="퇴직 절차와 퇴직금", publisher="고용노동부", category="labor", source_url="https://www.moel.go.kr/", text="퇴직을 결정하면 근로계약과 취업규칙에서 퇴직 통보 방법을 확인하고 서면 기록을 남기는 것이 좋습니다. 정해진 기간 이상 계속 근무한 근로자는 퇴직금 지급 대상이 될 수 있으며, 지급 기한이 지나도 받지 못하면 임금체불로 진정할 수 있습니다. 구체적인 지급 요건은 고용노동부 1350 또는 관할 노동관서에서 확인합니다."),
     register_document(document_id="moel-unpaid-wage-claim", title="임금체불 진정 절차", publisher="고용노동부", category="labor", source_url="https://1350.moel.go.kr/", text="임금체불이 발생하면 미지급 기간과 금액을 정리하고 근로계약서, 급여명세서, 출퇴근기록, 계좌내역을 보관합니다. 사업주에게 지급을 요청한 기록을 남기고, 해결되지 않으면 고용노동부 또는 관할 노동관서에 임금체불 진정을 제기할 수 있습니다. 진정 절차와 필요 서류는 고용노동부 1350에서 안내받을 수 있습니다."),
-    register_document(document_id="minimumwage-2026-notice", title="2026년 적용 최저임금 고시", publisher="최저임금위원회", category="labor", source_url="https://www.minimumwage.go.kr/", document_type="notice", effective_from="2026-01-01", text="2026년 1월 1일부터 12월 31일까지 적용되는 최저임금 고시 기준은 시간급 10,320원이다. 최저임금 기준은 사업의 종류 구분 없이 모든 사업장에 동일하게 적용된다. 시간급을 해당 연도 최저임금 미만으로 정한 근로계약의 해당 부분은 효력이 인정되지 않을 수 있으므로 계약서와 급여명세서의 시간급을 확인해야 한다."),
-    register_document(document_id="moel-overtime-premium-standard", title="연장·야간·휴일근로 가산수당 기준", publisher="고용노동부", category="labor", source_url="https://www.law.go.kr/", document_type="law", text="상시 5인 이상 사업장에서는 연장근로에 대하여 통상임금의 100분의 50 이상을 가산하여 지급해야 한다. 야간근로(오후 10시부터 다음 날 오전 6시 사이)와 휴일근로에도 가산수당 기준이 적용되며, 휴일근로가 8시간을 초과하면 초과분에 대하여 100분의 100 이상을 가산한다. 상시 5인 미만 사업장에는 가산수당 규정이 적용되지 않으므로 사업장 규모를 함께 확인해야 한다."),
-    register_document(document_id="moel-working-hours-standard", title="법정 근로시간과 휴게시간 기준", publisher="고용노동부", category="labor", source_url="https://www.law.go.kr/", document_type="law", text="1주간의 근로시간은 휴게시간을 제외하고 40시간을 초과할 수 없으며, 1일의 근로시간은 휴게시간을 제외하고 8시간을 초과할 수 없다. 당사자 간에 합의하면 1주 12시간을 한도로 연장근로를 할 수 있다. 사용자는 근로시간이 4시간인 경우 30분 이상, 8시간인 경우 1시간 이상의 휴게시간을 근로시간 도중에 주어야 한다."),
-    register_document(document_id="moel-weekly-holiday-standard", title="유급 주휴일 기준", publisher="고용노동부", category="labor", source_url="https://www.law.go.kr/", document_type="law", text="사용자는 1주 동안의 소정근로일을 개근한 근로자에게 1주에 평균 1회 이상의 유급휴일을 보장해야 한다. 이 유급 주휴일 기준은 4주 평균 1주 소정근로시간이 15시간 미만인 근로자에게는 적용되지 않는다. 주휴일을 무급으로 정한 계약 조항은 이 기준과 충돌할 수 있으므로 확인이 필요하다."),
-    register_document(document_id="moel-annual-leave-standard", title="연차 유급휴가 발생 기준", publisher="고용노동부", category="labor", source_url="https://www.law.go.kr/", document_type="law", text="사용자는 1년간 80퍼센트 이상 출근한 근로자에게 15일의 유급휴가를 주어야 한다. 계속 근로 기간이 1년 미만인 근로자에게는 1개월 개근 시 1일의 유급휴가를 주어야 한다. 이 연차 기준은 상시 5인 이상 사업장에 적용되며, 입사 후 1년 동안 연차가 전혀 없다고 정한 조항은 기준과 충돌할 수 있다."),
-    register_document(document_id="moel-wage-cut-penalty-prohibition", title="임금 전액 지급과 위약금 예정 금지", publisher="고용노동부", category="labor", source_url="https://www.law.go.kr/", document_type="law", text="임금은 통화로 직접 근로자에게 전액을 지급해야 하며, 법령 또는 단체협약에 특별한 규정이 있는 경우가 아니면 일부를 빼고 지급할 수 없다. 사용자가 근로자의 동의 없이 임금을 일방적으로 낮추는 것은 이 기준과 충돌할 수 있다. 또한 근로계약 불이행에 대한 위약금 또는 손해배상액을 미리 정하는 계약은 체결할 수 없다."),
-    register_document(document_id="moel-internal-rules-limit", title="취업규칙과 법령의 관계", publisher="고용노동부", category="labor", source_url="https://www.law.go.kr/", document_type="law", text="취업규칙이나 회사 내부규정은 법령이나 해당 사업장에 적용되는 단체협약과 어긋나서는 안 된다. 내부규정이 법령보다 우선한다고 정한 조항이 있어도 강행 법령의 기준을 밑도는 부분은 효력이 인정되지 않을 수 있다. 근로계약 중 법정 기준에 미치지 못하는 부분에도 같은 원칙이 적용된다."),
+    register_document(document_id="minimumwage-2026-notice", title="2026년 적용 최저임금 고시", publisher="최저임금위원회", category="labor", source_url="https://www.minimumwage.go.kr/minWage/policy/decisionMain.do", document_type="notice", effective_from="2026-01-01", text="2026년 1월 1일부터 12월 31일까지 적용되는 최저임금 고시 기준은 시간급 10,320원이다. 최저임금 기준은 사업의 종류 구분 없이 모든 사업장에 동일하게 적용된다. 시간급을 해당 연도 최저임금 미만으로 정한 근로계약의 해당 부분은 효력이 인정되지 않을 수 있으므로 계약서와 급여명세서의 시간급을 확인해야 한다."),
+    register_document(document_id="moel-overtime-premium-standard", title="연장·야간·휴일근로 가산수당 기준", publisher="고용노동부", category="labor", source_url="https://www.law.go.kr/법령/근로기준법/제56조", document_type="law", text="상시 5인 이상 사업장에서는 연장근로에 대하여 통상임금의 100분의 50 이상을 가산하여 지급해야 한다. 야간근로(오후 10시부터 다음 날 오전 6시 사이)와 휴일근로에도 가산수당 기준이 적용되며, 휴일근로가 8시간을 초과하면 초과분에 대하여 100분의 100 이상을 가산한다. 상시 5인 미만 사업장에는 가산수당 규정이 적용되지 않으므로 사업장 규모를 함께 확인해야 한다."),
+    register_document(document_id="moel-working-hours-standard", title="법정 근로시간과 휴게시간 기준", publisher="고용노동부", category="labor", source_url="https://www.law.go.kr/법령/근로기준법/제50조", document_type="law", text="1주간의 근로시간은 휴게시간을 제외하고 40시간을 초과할 수 없으며, 1일의 근로시간은 휴게시간을 제외하고 8시간을 초과할 수 없다. 당사자 간에 합의하면 1주 12시간을 한도로 연장근로를 할 수 있다. 사용자는 근로시간이 4시간인 경우 30분 이상, 8시간인 경우 1시간 이상의 휴게시간을 근로시간 도중에 주어야 한다."),
+    register_document(document_id="moel-weekly-holiday-standard", title="유급 주휴일 기준", publisher="고용노동부", category="labor", source_url="https://www.law.go.kr/법령/근로기준법/제55조", document_type="law", text="사용자는 1주 동안의 소정근로일을 개근한 근로자에게 1주에 평균 1회 이상의 유급휴일을 보장해야 한다. 이 유급 주휴일 기준은 4주 평균 1주 소정근로시간이 15시간 미만인 근로자에게는 적용되지 않는다. 주휴일을 무급으로 정한 계약 조항은 이 기준과 충돌할 수 있으므로 확인이 필요하다."),
+    register_document(document_id="moel-annual-leave-standard", title="연차 유급휴가 발생 기준", publisher="고용노동부", category="labor", source_url="https://www.law.go.kr/법령/근로기준법/제60조", document_type="law", text="사용자는 1년간 80퍼센트 이상 출근한 근로자에게 15일의 유급휴가를 주어야 한다. 계속 근로 기간이 1년 미만인 근로자에게는 1개월 개근 시 1일의 유급휴가를 주어야 한다. 이 연차 기준은 상시 5인 이상 사업장에 적용되며, 입사 후 1년 동안 연차가 전혀 없다고 정한 조항은 기준과 충돌할 수 있다."),
+    register_document(document_id="moel-wage-cut-penalty-prohibition", title="임금 전액 지급과 위약금 예정 금지", publisher="고용노동부", category="labor", source_url="https://www.law.go.kr/법령/근로기준법/제43조", document_type="law", text="임금은 통화로 직접 근로자에게 전액을 지급해야 하며, 법령 또는 단체협약에 특별한 규정이 있는 경우가 아니면 일부를 빼고 지급할 수 없다. 사용자가 근로자의 동의 없이 임금을 일방적으로 낮추는 것은 이 기준과 충돌할 수 있다. 또한 근로계약 불이행에 대한 위약금 또는 손해배상액을 미리 정하는 계약은 체결할 수 없다."),
+    register_document(document_id="moel-internal-rules-limit", title="취업규칙과 법령의 관계", publisher="고용노동부", category="labor", source_url="https://www.law.go.kr/법령/근로기준법/제96조", document_type="law", text="취업규칙이나 회사 내부규정은 법령이나 해당 사업장에 적용되는 단체협약과 어긋나서는 안 된다. 내부규정이 법령보다 우선한다고 정한 조항이 있어도 강행 법령의 기준을 밑도는 부분은 효력이 인정되지 않을 수 있다. 근로계약 중 법정 기준에 미치지 못하는 부분에도 같은 원칙이 적용된다."),
 )
 
 
@@ -406,12 +418,14 @@ def select_evidence(matches: list[tuple[OfficialChunk, float]], max_evidence: in
     return selected
 
 
-def source_from_chunk(chunk: OfficialChunk, relevance: float) -> RAGSource:
+def source_from_chunk(chunk: OfficialChunk, relevance: float, language: str = "ko") -> RAGSource:
     document = chunk.document
     freshness = "live_verification_required" if document.document_type in {"operational", "live"} else "versioned"
     status = "최신성 재확인 필요" if document.status == "fetch_failed" or (document.next_check_at and document.next_check_at < datetime.now(timezone.utc).isoformat()) else "최신 공식자료 확인 완료"
     authority_score, trust_level, reasons = trust_for_document(document, status)
-    return RAGSource(document_id=document.document_id, chunk_id=chunk.chunk_id, title=document.title, publisher=document.source_organization or document.publisher, url=document.source_url, verified_at=document.verified_at, relevance=relevance, document_version=document.version, published_at=document.published_at or document.issued_at, collected_at=document.collected_at, effective_from=document.effective_from, last_checked_at=document.last_checked_at, freshness_type=freshness, freshness_status=status, document_type=document.document_type, authority_score=authority_score, trust_level=trust_level, trust_reasons=reasons)
+    from .source_display import display_fields
+    display_title, display_publisher, source_summary = display_fields(document.document_id, document.source_organization or document.publisher, language)
+    return RAGSource(document_id=document.document_id, chunk_id=chunk.chunk_id, title=document.title, publisher=document.source_organization or document.publisher, url=document.source_url, url_specific=is_specific_source_url(document.source_url), display_title=display_title, display_publisher=display_publisher, source_summary=source_summary, verified_at=document.verified_at, relevance=relevance, document_version=document.version, published_at=document.published_at or document.issued_at, collected_at=document.collected_at, effective_from=document.effective_from, last_checked_at=document.last_checked_at, freshness_type=freshness, freshness_status=status, document_type=document.document_type, authority_score=authority_score, trust_level=trust_level, trust_reasons=reasons)
 
 
 def trust_for_document(document: RAGDocument, freshness_status: str | None = None) -> tuple[float, str, list[str]]:

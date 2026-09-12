@@ -9,9 +9,9 @@ import { IconCheck, IconChevronDown, IconLock, IconPhone, IconPin, IconPlus, Ico
 type Turn = { id: string; question: string; answer: ConsultationResponse };
 
 const contextCopy = {
-  ko: { userType: "사용자 유형 (선택)", worker: "외국인 근로자", student: "유학생", region: "지역 (예: 전주)", location: "위치", locationHint: "위치 권한을 허용하면 현재 지역을 자동으로 선택할 수 있습니다.", viewingGuide: "현재 보고 있는 가이드" },
-  en: { userType: "User type (optional)", worker: "Foreign worker", student: "Student", region: "Region (e.g. Jeonju)", location: "Location", locationHint: "Allow location access to select your current region automatically.", viewingGuide: "Guide you are viewing" },
-  vi: { userType: "Loại người dùng (tùy chọn)", worker: "Người lao động", student: "Du học sinh", region: "Khu vực (VD: Jeonju)", location: "Vị trí", locationHint: "Cho phép truy cập vị trí để tự động chọn khu vực hiện tại.", viewingGuide: "Hướng dẫn đang xem" },
+  ko: { userType: "사용자 유형 (선택)", worker: "외국인 근로자", student: "유학생", region: "지역 (예: 전주)", location: "위치", locationHint: "위치 권한을 허용하면 현재 지역을 자동으로 선택할 수 있습니다.", viewingGuide: "현재 보고 있는 가이드", tooMany: "요청이 많습니다. 잠시 후 다시 시도해 주세요.", connectError: "연결할 수 없습니다. 연결 상태를 확인해 주세요.", feedbackError: "의견을 전송하지 못했습니다." },
+  en: { userType: "User type (optional)", worker: "Foreign worker", student: "Student", region: "Region (e.g. Jeonju)", location: "Location", locationHint: "Allow location access to select your current region automatically.", viewingGuide: "Guide you are viewing", tooMany: "Too many requests. Please try again shortly.", connectError: "Unable to connect. Please check your connection.", feedbackError: "Unable to send feedback." },
+  vi: { userType: "Loại người dùng (tùy chọn)", worker: "Người lao động", student: "Du học sinh", region: "Khu vực (VD: Jeonju)", location: "Vị trí", locationHint: "Cho phép truy cập vị trí để tự động chọn khu vực hiện tại.", viewingGuide: "Hướng dẫn đang xem", tooMany: "Quá nhiều yêu cầu. Vui lòng thử lại sau.", connectError: "Không thể kết nối. Vui lòng kiểm tra kết nối.", feedbackError: "Không gửi được phản hồi." },
 } as const;
 
 const guideQuestionTemplates = {
@@ -85,7 +85,12 @@ function AssistantAnswer({ answer, language, onFeedback, feedbackSent }: { answe
     {answer.answer_mode === "insufficient_evidence" && <div className="urgent-notice"><IconWarning size={18} />{t.insufficient}</div>}
     {answer.evidence_sufficient && <div className="privacy-note"><IconCheck size={16} />{t.evidenceNote}</div>}
     {answer.urgent_notice && <div className="urgent-notice"><IconWarning size={18} />{answer.urgent_notice}</div>}
-    {answer.sources.length > 0 && <section className="chat-extra"><h3>{t.sourceDocuments}</h3><div className="source-list">{answer.sources.map((source) => <a href={source.url} target="_blank" rel="noreferrer" key={source.chunk_id}><strong>{source.title}<b className={`trust-badge ${source.trust_level}`}>{trustLabel(source.trust_level, language)}</b></strong><span>{source.publisher} · {language === "ko" ? "관련도" : language === "en" ? "Relevance" : "Mức liên quan"} <b>{(source.relevance * 100).toFixed(0)}%</b> · {language === "ko" ? "권위" : language === "en" ? "Authority" : "Thẩm quyền"} <b>{(source.authority_score * 100).toFixed(0)}%</b></span><small>{sourceDateLabel(source, language)}{source.last_checked_at ? ` · ${language === "ko" ? "마지막 확인" : language === "en" ? "Checked" : "Kiểm tra"} ${source.last_checked_at.slice(0, 10)}` : ""}{sourceFreshnessLabel(source, language) ? ` · ${sourceFreshnessLabel(source, language)}` : ""}</small></a>)}</div></section>}
+    {answer.sources.length > 0 && <section className="chat-extra"><h3>{t.sourceDocuments}</h3><div className="source-list">{answer.sources.map((source) => {
+      const body = <><strong>{source.title}<b className={`trust-badge ${source.trust_level}`}>{trustLabel(source.trust_level, language)}</b></strong>{language !== "ko" && source.display_title && <span className="source-translated-title">{source.display_title}</span>}<span>{source.publisher}{language !== "ko" && source.display_publisher ? ` · ${source.display_publisher}` : ""} · {language === "ko" ? "관련도" : language === "en" ? "Relevance" : "Mức liên quan"} <b>{(source.relevance * 100).toFixed(0)}%</b> · {language === "ko" ? "권위" : language === "en" ? "Authority" : "Thẩm quyền"} <b>{(source.authority_score * 100).toFixed(0)}%</b></span>{language !== "ko" && source.source_summary && <span className="source-summary">{source.source_summary}</span>}<small>{sourceDateLabel(source, language)}{source.last_checked_at ? ` · ${language === "ko" ? "마지막 확인" : language === "en" ? "Checked" : "Kiểm tra"} ${source.last_checked_at.slice(0, 10)}` : ""}{sourceFreshnessLabel(source, language) ? ` · ${sourceFreshnessLabel(source, language)}` : ""}</small></>;
+      return source.url_specific
+        ? <a href={source.url} target="_blank" rel="noopener noreferrer" key={source.chunk_id}>{body}</a>
+        : <div className="source-disabled" key={source.chunk_id}>{body}<small className="no-link-note">{{ ko: "상세 출처 링크를 확인할 수 없습니다.", en: "Detailed source link unavailable.", vi: "Không có liên kết chi tiết đến nguồn." }[language]}</small></div>;
+    })}</div></section>}
     {answer.guides.length > 0 && <section className="chat-extra"><h3>{t.relatedGuide}</h3><div className="chat-guide-list">{answer.guides.map((guide) => <Link href={withLanguage(`/guides/${guide.id}`, language)} key={guide.id}><span className={`category-badge ${guide.category}`}>{guide.category === "residency" ? t.residency : t.labor}</span><strong>{localized(guide.title, language)}</strong><small>{localized(guide.summary, language)}</small></Link>)}</div></section>}
     {answer.follow_up_questions.length > 0 && <section className="chat-extra"><h3>{t.followUp}</h3><ul>{answer.follow_up_questions.map((item) => <li key={item}>{item}</li>)}</ul></section>}
     {answer.agencies.length > 0 && <section className="chat-extra"><h3>{t.help}</h3><div className="answer-agencies">{answer.agencies.map((agency) => <div key={agency.id}><strong>{localized(agency.name, language)}</strong><a href={`tel:${agency.phone}`}><IconPhone size={15} />{agency.phone}{agency.distance_km !== null ? ` · ${agency.distance_km} km` : ""}</a></div>)}</div></section>}
@@ -106,8 +111,12 @@ export function ChatClient({ language, guide = null }: { language: Language; gui
   const [region, setRegion] = useState("");
   const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
+  const lastAnswerRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [turns, loading]);
+  // While waiting, keep the typing indicator visible at the bottom; once the
+  // answer arrives, jump to the TOP of the new answer so reading starts there.
+  useEffect(() => { if (loading) endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [loading]);
+  useEffect(() => { lastAnswerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }, [turns]);
 
   async function send() {
     const text = question.trim();
@@ -120,7 +129,7 @@ export function ChatClient({ language, guide = null }: { language: Language; gui
       setTurns((previous) => [...previous, { id: answer.consultation_id || `${Date.now()}`, question: text, answer }]);
     } catch (requestError) {
       setQuestion(text);
-      setError(requestError instanceof ApiError && requestError.status === 429 ? "Too many requests · 잠시 후 다시 시도해 주세요." : "Unable to connect · 연결 상태를 확인해 주세요.");
+      setError(requestError instanceof ApiError && requestError.status === 429 ? c.tooMany : c.connectError);
     } finally { setLoading(false); }
   }
 
@@ -150,7 +159,7 @@ export function ChatClient({ language, guide = null }: { language: Language; gui
       () => setError(c.locationHint),
     );
   }
-  async function feedback(rating: "helpful" | "not_helpful") { const answer = turns.at(-1)?.answer; if (!answer?.consultation_id || feedbackSent) return; try { await sendFeedback(answer.consultation_id, rating); setFeedbackSent(true); } catch { setError("Unable to send feedback."); } }
+  async function feedback(rating: "helpful" | "not_helpful") { const answer = turns.at(-1)?.answer; if (!answer?.consultation_id || feedbackSent) return; try { await sendFeedback(answer.consultation_id, rating); setFeedbackSent(true); } catch { setError(c.feedbackError); } }
 
   return <section className="chat-shell chatbot-shell content-width">
     <div className="chat-heading"><div className="eyebrow">JBIG CONSULTATION</div><h1>{t.chatTitle}</h1></div>
@@ -168,7 +177,7 @@ export function ChatClient({ language, guide = null }: { language: Language; gui
           </>}
         </div>
       </div>}
-      {turns.map((turn, index) => <div className="chat-turn" key={turn.id}><div className="message-row user-row"><span className="message-avatar user-avatar"><IconUser size={17} /></span><div className="message-bubble user-bubble"><p>{turn.question}</p></div></div><div className="message-row assistant-row"><span className="message-avatar assistant-avatar"><IconSpark size={17} /></span><div className="message-bubble assistant-bubble"><AssistantAnswer answer={turn.answer} language={language} onFeedback={feedback} feedbackSent={feedbackSent && index === turns.length - 1} /></div></div></div>)}
+      {turns.map((turn, index) => <div className="chat-turn" key={turn.id}><div className="message-row user-row"><span className="message-avatar user-avatar"><IconUser size={17} /></span><div className="message-bubble user-bubble"><p>{turn.question}</p></div></div><div className="message-row assistant-row" ref={index === turns.length - 1 ? lastAnswerRef : undefined}><span className="message-avatar assistant-avatar"><IconSpark size={17} /></span><div className="message-bubble assistant-bubble"><AssistantAnswer answer={turn.answer} language={language} onFeedback={feedback} feedbackSent={feedbackSent && index === turns.length - 1} /></div></div></div>)}
       {loading && <div className="message-row assistant-row"><span className="message-avatar assistant-avatar"><IconSpark size={17} /></span><div className="message-bubble assistant-bubble loading-bubble"><span className="typing-dots"><i /><i /><i /></span><span>{t.ragSearching}</span></div></div>}
       <div ref={endRef} />
     </div>

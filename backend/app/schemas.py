@@ -54,6 +54,10 @@ class RAGSource(BaseModel):
     title: str
     publisher: str
     url: str
+    url_specific: bool = True
+    display_title: str | None = None
+    display_publisher: str | None = None
+    source_summary: str | None = None
     verified_at: str
     relevance: float
     document_version: str = "1"

@@ -232,7 +232,7 @@ article p { margin: 0; color: var(--ink); font-size: 15px; line-height: 1.6; }
 .suggestion-list button { padding: 11px 16px; color: var(--ink); background: white; border: 1px solid #d7e1ec; border-radius: 999px; cursor: pointer; font: inherit; font-size: 14px; transition: border-color .15s, color .15s; }
 .suggestion-list button:hover { border-color: var(--blue); color: var(--blue); }
 .chat-turn + .chat-turn { margin-top: 26px; }
-.message-row { display: flex; gap: 10px; align-items: flex-start; }
+.message-row { display: flex; gap: 10px; align-items: flex-start; scroll-margin-top: 10px; }
 .message-row + .message-row { margin-top: 12px; }
 .user-row { justify-content: flex-end; }
 .message-avatar { display: grid; flex: 0 0 34px; width: 34px; height: 34px; place-items: center; border-radius: 11px; }
@@ -391,6 +391,14 @@ article p { margin: 0; color: var(--ink); font-size: 15px; line-height: 1.6; }
 .risk-compare .diff b { color: #B91C1C; }
 .risk-sources { margin-top: 10px; font-size: 13px; }
 .risk-sources a { display: inline-block; margin-right: 10px; color: var(--blue); font-weight: 700; }
+.source-disabled { display: grid; gap: 5px; padding: 13px 15px; color: var(--ink); background: #f4f8fc; border-radius: 10px; cursor: default; }
+.source-translated-title { color: var(--navy); font-size: 14px; font-weight: 700; }
+.source-summary { color: var(--ink); font-size: 13px; line-height: 1.6; }
+.risk-source-entry { display: grid; gap: 3px; margin-top: 6px; }
+.risk-source-entry .source-summary { margin-left: 2px; }
+.source-disabled strong { color: var(--ink); }
+.no-link-note, .source-disabled-inline { color: var(--ink); font-weight: 600; }
+.source-disabled-inline { display: inline-block; margin-right: 10px; }
 .deviation-summary h2 { display: flex; align-items: center; gap: 8px; }
 .deviation-summary h2 svg { color: #B91C1C; }
 .deviation-summary ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
