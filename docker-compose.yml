@@ -1,0 +1,15 @@
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: jb_bridge
+      POSTGRES_USER: jb_bridge
+      POSTGRES_PASSWORD: local_development_only
+    ports:
+      - "5432:5432"
+    volumes:
+      - jb_bridge_db:/var/lib/postgresql/data
+
+volumes:
+  jb_bridge_db:
+
