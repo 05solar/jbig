@@ -1,3 +1,4 @@
+# LLM 기반 상담 답변 생성(RAG 근거 답변·의미 분류·언어 검증·폴백)을 담당하는 파일
 import json
 import logging
 import re

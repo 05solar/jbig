@@ -1,3 +1,4 @@
+// 전역 오류 화면을 렌더링하는 파일
 "use client";
 
 export default function ErrorPage({ reset }: { error: Error & { digest?: string }; reset: () => void }) {

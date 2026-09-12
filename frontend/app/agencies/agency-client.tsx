@@ -1,3 +1,4 @@
+// 지원기관 검색 UI(필터·위치 기반 정렬·지역 감지)를 담당하는 파일
 "use client";
 
 import { useCallback, useEffect, useState } from "react";

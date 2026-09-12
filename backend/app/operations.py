@@ -1,3 +1,4 @@
+# 인메모리 운영 기능(레이트리밋·상담 캐시·일일 AI 예산·지표 집계)을 담당하는 파일
 import hashlib
 import re
 import threading

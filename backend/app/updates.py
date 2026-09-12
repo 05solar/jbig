@@ -1,3 +1,4 @@
+# 공식 원문 변경 감지(cron용 fetch·해시 비교·검토 대기 버전 생성)를 담당하는 파일
 """Offline/cron-driven official source change detection for stored RAG documents."""
 from __future__ import annotations
 

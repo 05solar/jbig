@@ -1,3 +1,4 @@
+# 테스트용 결정적 가짜 구현(가짜 임베딩·FakeLLMClient·FailingLLMClient)을 제공하는 파일
 """Deterministic fakes so RAG tests never call external APIs.
 
 Every fake mirrors the small slice of the OpenAI client surface the app uses

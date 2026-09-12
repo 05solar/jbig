@@ -1,3 +1,4 @@
+// 다국어 메시지 사전과 언어 유틸리티를 담당하는 파일
 export const languages = ["ko", "en", "vi"] as const;
 export type Language = (typeof languages)[number];
 

@@ -1,3 +1,4 @@
+// 404 화면을 렌더링하는 파일
 import Link from "next/link";
 
 export default function NotFound() {

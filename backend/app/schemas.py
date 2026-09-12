@@ -1,3 +1,4 @@
+# API 요청/응답과 RAG 문서·출처·위험항목의 Pydantic 스키마를 정의하는 파일
 from typing import Literal
 
 from pydantic import BaseModel, Field

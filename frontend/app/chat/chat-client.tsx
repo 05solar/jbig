@@ -1,3 +1,4 @@
+// AI 상담 챗봇 UI 전체(대화·출처 카드·위치·피드백)를 담당하는 파일
 "use client";
 
 import Link from "next/link";
@@ -138,9 +139,22 @@ export function ChatClient({ language, guide = null }: { language: Language; gui
     void send();
   }
 
+  // Windows/한글 IME: 조합 중 Enter는 keydown이 isComposing(keyCode 229)로
+  // 들어와 무시되면 전송이 안 되는 것처럼 보인다. Enter는 항상 개행을 막고,
+  // 조합 중이었다면 compositionend 시점에 전송을 이어서 수행한다.
+  const composingEnterRef = useRef(false);
   function onComposerKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
-    if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {
-      event.preventDefault();
+    if (event.key !== "Enter" || event.shiftKey) return;
+    event.preventDefault();
+    if (event.nativeEvent.isComposing || event.keyCode === 229) {
+      composingEnterRef.current = true;
+      return;
+    }
+    void send();
+  }
+  function onComposerCompositionEnd() {
+    if (composingEnterRef.current) {
+      composingEnterRef.current = false;
       void send();
     }
   }
@@ -193,7 +207,7 @@ export function ChatClient({ language, guide = null }: { language: Language; gui
         <button type="button" className={location ? "active" : ""} onClick={useLocation}><IconPin size={15} />{c.location}</button>
       </div>
       <div className="composer-row">
-        <textarea value={question} onChange={(event) => setQuestion(event.target.value)} onKeyDown={onComposerKeyDown} placeholder={t.chatPlaceholder} maxLength={1000} rows={2} />
+        <textarea value={question} onChange={(event) => setQuestion(event.target.value)} onKeyDown={onComposerKeyDown} onCompositionEnd={onComposerCompositionEnd} placeholder={t.chatPlaceholder} maxLength={1000} rows={2} />
         <button className="primary composer-send" disabled={loading || question.trim().length < 2} aria-label={t.send}>{loading ? "…" : <IconSend size={22} />}</button>
       </div>
       <div className="question-meta"><small><IconLock size={14} />{t.noPersonal}</small><span>{question.length}/1000</span></div>

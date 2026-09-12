@@ -1,3 +1,4 @@
+# 가이드 임베딩 색인과 가이드 시맨틱 검색을 담당하는 파일
 import hashlib
 import json
 import logging

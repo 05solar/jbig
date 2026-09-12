@@ -1,3 +1,4 @@
+// 백엔드 API 타입 정의와 fetch 클라이언트를 담당하는 파일
 export type Category = "residency" | "labor";
 
 export type GuideReference = { title: string; url: string; publisher: string };

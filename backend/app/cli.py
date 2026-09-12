@@ -1,3 +1,4 @@
+# RAG 운영 CLI(원문 변경 확인·검토 대기 조회·버전 승인/거절)를 제공하는 파일
 import argparse
 import json
 

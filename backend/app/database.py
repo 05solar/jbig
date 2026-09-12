@@ -1,3 +1,4 @@
+# PostgreSQL/pgvector 접근 계층(스키마 마이그레이션·문서/청크 저장·후보/벡터 검색·버전 승인)을 담당하는 파일
 import json
 import logging
 import time

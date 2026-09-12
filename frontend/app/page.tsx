@@ -1,3 +1,4 @@
+// 홈 화면(히어로·기능 블록)을 렌더링하는 파일
 import Link from "next/link";
 import { Header } from "./components/header";
 import { IconChat, IconCheck, IconCompass, IconDocument, IconPin } from "./components/icons";

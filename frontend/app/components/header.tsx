@@ -1,3 +1,4 @@
+// 상단 네비게이션(브랜드·중앙 메뉴·언어 선택)을 담당하는 파일
 import Link from "next/link";
 import { Language, messages, withLanguage } from "../lib/i18n";
 import { IconChat, IconCompass, IconDocument, IconPin } from "./icons";

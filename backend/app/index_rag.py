@@ -1,3 +1,4 @@
+# 공식 문서 색인과 임베딩 재생성(--reembed) CLI를 제공하는 파일
 import argparse
 
 from . import embedding_service

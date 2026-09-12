@@ -1,3 +1,4 @@
+// 공용 SVG 아이콘 컴포넌트 모음을 담당하는 파일
 type IconProps = { size?: number; className?: string; strokeWidth?: number };
 
 function Svg({ size = 20, className, strokeWidth = 1.8, children }: IconProps & { children: React.ReactNode }) {

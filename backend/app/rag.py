@@ -1,3 +1,4 @@
+# RAG 핵심 기능(문서 등록·청크 분할·토큰 정규화·DB 하이브리드 검색·랭킹·증거 선택·출처 구성)을 담당하는 파일
 """Reviewed official-document RAG primitives.
 
 This module deliberately accepts text and metadata rather than fetching URLs. A

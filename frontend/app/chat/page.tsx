@@ -1,3 +1,4 @@
+// AI 상담 페이지 진입(언어·가이드 파라미터 처리)을 담당하는 파일
 import { Header } from "../components/header";
 import { ChatClient } from "./chat-client";
 import { Guide, getGuide } from "../lib/api";

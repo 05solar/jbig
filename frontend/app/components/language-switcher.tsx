@@ -1,3 +1,4 @@
+// 언어 선택 커스텀 드롭다운을 담당하는 파일
 "use client";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";

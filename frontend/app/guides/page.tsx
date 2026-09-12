@@ -1,3 +1,4 @@
+// 상황별 가이드 목록 화면을 렌더링하는 파일
 import Link from "next/link";
 import { Header } from "../components/header";
 import { Category, getGuides } from "../lib/api";

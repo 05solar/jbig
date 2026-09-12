@@ -1,3 +1,4 @@
+# 업로드 문서 분석 파이프라인(추출·마스킹·유형분류·위험규칙·RAG 근거·LLM 요약)을 담당하는 파일
 import base64
 import io
 import json

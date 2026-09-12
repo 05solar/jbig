@@ -1,3 +1,4 @@
+# 검토 완료 텍스트 파일 1건을 RAG 문서로 등록하는 CLI 파일
 """Register one reviewed text document without fetching a URL."""
 import argparse
 

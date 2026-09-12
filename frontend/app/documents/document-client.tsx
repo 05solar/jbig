@@ -1,3 +1,4 @@
+// 문서 검토 UI 전체(업로드·표준 문서 가이드·위험 분석 결과)를 담당하는 파일
 "use client";
 
 import Link from "next/link";

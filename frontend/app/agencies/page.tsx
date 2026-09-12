@@ -1,3 +1,4 @@
+// 지원기관 찾기 페이지 진입을 담당하는 파일
 import { Header } from "../components/header";
 import { getLanguage } from "../lib/i18n";
 import { AgencyClient } from "./agency-client";

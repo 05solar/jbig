@@ -1,3 +1,4 @@
+# 언어 감지와 키워드 규칙 기반 가이드 매칭(규칙 상담 계층)을 담당하는 파일
 import re
 
 from .data import AGENCIES, GUIDES

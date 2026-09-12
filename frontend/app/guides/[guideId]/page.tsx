@@ -1,3 +1,4 @@
+// 가이드 상세 화면(절차·서류·실수·공식자료·AI 상담 연결)을 렌더링하는 파일
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Header } from "../../components/header";

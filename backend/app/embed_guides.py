@@ -1,3 +1,4 @@
+# 가이드 임베딩 생성/재생성(--reembed) CLI를 제공하는 파일
 import argparse
 
 from . import embedding_service

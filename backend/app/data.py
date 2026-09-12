@@ -1,3 +1,4 @@
+# 가이드 13종과 지원기관 5곳의 시드 데이터(3개 언어)를 정의하는 파일
 from .schemas import Agency, Guide
 
 

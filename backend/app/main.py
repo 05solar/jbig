@@ -1,3 +1,4 @@
+# FastAPI 앱과 전체 API 엔드포인트(상담·가이드·기관·문서분석·지역해석·RAG 관리자)를 정의하는 파일
 from uuid import uuid4
 from contextlib import asynccontextmanager
 from math import asin, cos, radians, sin, sqrt

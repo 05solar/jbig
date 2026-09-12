@@ -1,3 +1,4 @@
+# 환경변수 기반 전체 설정(RAG·임베딩·OCR·운영 한도)을 정의하는 파일
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 

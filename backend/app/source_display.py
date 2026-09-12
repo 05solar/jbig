@@ -1,3 +1,4 @@
+# 출처 카드의 표시용 번역(영/베 제목·기관·요약) 사전을 담당하는 파일
 """Display-layer translations for source cards (en/vi).
 
 The original title/publisher/source_url are NEVER replaced — these values are

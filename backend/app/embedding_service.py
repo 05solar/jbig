@@ -1,3 +1,4 @@
+# 챗봇·OCR·가이드가 공용으로 쓰는 임베딩 provider(local/openai/none) 서비스를 담당하는 파일
 """Shared embedding service for RAG indexing and search.
 
 One provider per process (lazy singleton): the chatbot and the OCR document

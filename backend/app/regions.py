@@ -1,3 +1,4 @@
+# 좌표를 전북 시·군 지역명으로 해석하는 결정적 역지오코딩을 담당하는 파일
 """Deterministic reverse geocoding for Jeonbuk cities and counties.
 
 Coordinates are matched to the nearest administrative center without any

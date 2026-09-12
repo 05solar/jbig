@@ -1,3 +1,4 @@
+// 전역 레이아웃과 사이트 메타데이터를 정의하는 파일
 import type { Metadata } from "next";
 import "./globals.css";
 

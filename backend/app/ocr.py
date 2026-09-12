@@ -1,3 +1,4 @@
+# PaddleOCR 기반 로컬 문자 인식(이미지 전처리·스캔 PDF·신뢰도 계산)을 담당하는 파일
 """Local OCR for scanned documents built on PaddleOCR.
 
 The engine runs fully on this machine: uploaded images never leave the server
