@@ -137,11 +137,11 @@ def save_guide_embedding(guide_id: str, embedding: list[float], model: str, cont
         return False
 
 
-def search_guide_vectors(embedding: list[float], limit: int, threshold: float) -> list[tuple[Guide, float]] | None:
+def search_guide_vectors(embedding: list[float], limit: int, threshold: float, model: str | None = None) -> list[tuple[Guide, float]] | None:
     try:
         vector = "[" + ",".join(str(value) for value in embedding) + "]"
         with connection() as conn, conn.cursor() as cursor:
-            cursor.execute("""SELECT data, 1 - (embedding <=> %s::vector) AS similarity FROM guides WHERE embedding IS NOT NULL AND embedding_model=%s AND 1 - (embedding <=> %s::vector) >= %s ORDER BY embedding <=> %s::vector LIMIT %s""", (vector, settings.embedding_model, vector, threshold, vector, limit))
+            cursor.execute("""SELECT data, 1 - (embedding <=> %s::vector) AS similarity FROM guides WHERE embedding IS NOT NULL AND embedding_model=%s AND 1 - (embedding <=> %s::vector) >= %s ORDER BY embedding <=> %s::vector LIMIT %s""", (vector, model or settings.embedding_model, vector, threshold, vector, limit))
             return [(Guide.model_validate(row[0]), float(row[1])) for row in cursor.fetchall()]
     except Exception:
         return None

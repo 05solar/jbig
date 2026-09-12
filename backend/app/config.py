@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     rag_model_cache_dir: str | None = None
     rag_db_lexical_candidates: int = 20
     rag_db_vector_candidates: int = 20
-    vector_similarity_threshold: float = 0.55
+    vector_similarity_threshold: float = 0.44
     document_max_bytes: int = 5_000_000
     ocr_enabled: bool = True
     ocr_language: str = "korean"

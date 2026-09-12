@@ -15,13 +15,13 @@ logger = logging.getLogger(__name__)
 
 
 def guide_embedding_text(guide: Guide) -> str:
-    parts: list[str] = []
-    for language in ("ko", "en", "vi"):
-        parts.extend([guide.title[language], guide.summary[language]])
-        parts.extend(guide.steps[language])
-        parts.extend(guide.required_documents[language])
-        parts.extend(guide.cautions[language])
-    return "\n".join(parts)
+    """Korean title+summary (+ English title as an anchor).
+
+    The multilingual model aligns languages in one vector space, so a compact
+    single-language passage matches ko/en/vi queries better than concatenating
+    all translations (which dilutes the vector and overflows the model's
+    sequence window)."""
+    return "\n".join([guide.title["ko"], guide.title["en"], guide.summary["ko"]])
 
 
 def content_hash(text: str) -> str:
@@ -37,20 +37,32 @@ def create_embeddings(texts: list[str], client_factory: Callable[..., Any] | Non
     return [item.embedding for item in sorted(response.data, key=lambda item: item.index)]
 
 
-def index_guides(client_factory: Callable[..., Any] | None = None) -> tuple[int, int]:
-    if not settings.openai_api_key or not database_available():
+def index_guides(client_factory: Callable[..., Any] | None = None, force: bool = False) -> tuple[int, int]:
+    """Embed guides through the shared EmbeddingService (same provider as RAG).
+
+    An explicit client_factory keeps the legacy injected-OpenAI path for tests.
+    force=True re-embeds every guide regardless of content hash (--reembed)."""
+    from . import embedding_service
+    if not database_available() or (client_factory is None and embedding_service.signature() == "none"):
         return 0, len(GUIDES)
     hashes = embedding_hashes()
     if hashes is None:
         return 0, len(GUIDES)
-    pending = [(guide, guide_embedding_text(guide)) for guide in GUIDES if hashes.get(guide.id) != content_hash(guide_embedding_text(guide))]
+    pending = [(guide, guide_embedding_text(guide)) for guide in GUIDES if force or hashes.get(guide.id) != content_hash(guide_embedding_text(guide))]
     if not pending:
         return 0, 0
-    if not acquire_ai_budget():
-        return 0, len(pending)
     try:
-        vectors = create_embeddings([text for _, text in pending], client_factory)
-        saved = sum(save_guide_embedding(guide.id, vector, settings.embedding_model, content_hash(text)) for (guide, text), vector in zip(pending, vectors))
+        if client_factory is not None:
+            if not acquire_ai_budget():
+                return 0, len(pending)
+            vectors = create_embeddings([text for _, text in pending], client_factory)
+            model = settings.embedding_model
+        else:
+            vectors = embedding_service.embed_texts([text for _, text in pending])
+            model = embedding_service.signature()
+            if vectors is None:
+                return 0, len(pending)
+        saved = sum(save_guide_embedding(guide.id, vector, model, content_hash(text)) for (guide, text), vector in zip(pending, vectors))
         return saved, len(pending) - saved
     except Exception as error:
         record_ai_fallback()
@@ -59,12 +71,28 @@ def index_guides(client_factory: Callable[..., Any] | None = None) -> tuple[int,
 
 
 def search_guides_semantically(question: str, client_factory: Callable[..., Any] | None = None, searcher: Callable[[list[float], int, float], list[tuple[Guide, float]] | None] | None = None) -> list[Guide]:
-    if not settings.openai_api_key or (searcher is None and not database_available()) or not acquire_ai_budget():
+    """Semantic guide fallback via the shared EmbeddingService.
+
+    The stored-vector filter uses the provider signature, so stale vectors from
+    another provider/model are never silently mixed into results."""
+    from . import embedding_service
+    if searcher is None and not database_available():
         return []
     try:
         safe_question = re.sub(r"(?<!\d)\d{6}[- ]?\d{6,7}(?!\d)", "[REDACTED]", question)
-        vector = create_embeddings([safe_question], client_factory)[0]
-        matches = (searcher or search_guide_vectors)(vector, 3, settings.vector_similarity_threshold)
+        if client_factory is not None:
+            if not settings.openai_api_key or not acquire_ai_budget():
+                return []
+            vector = create_embeddings([safe_question], client_factory)[0]
+            model = settings.embedding_model
+        else:
+            if embedding_service.signature() == "none":
+                return []
+            vector = embedding_service.embed_text(safe_question)
+            model = embedding_service.signature()
+            if vector is None:
+                return []
+        matches = (searcher or (lambda v, limit, threshold: search_guide_vectors(v, limit, threshold, model=model)))(vector, 3, settings.vector_similarity_threshold)
         if not matches:
             return []
         guides = [guide for guide, _ in matches]

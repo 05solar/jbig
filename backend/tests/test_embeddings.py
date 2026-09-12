@@ -28,11 +28,15 @@ class EmbeddingTests(unittest.TestCase):
     def tearDown(self) -> None:
         settings.openai_api_key = self.original_key
 
-    def test_search_document_contains_all_languages(self) -> None:
+    def test_search_document_is_compact_and_cross_lingually_anchored(self) -> None:
+        # The multilingual model aligns languages in one space, so the passage is a
+        # compact Korean anchor (+English title) instead of all translations —
+        # it must stay within the model's sequence window.
         text = guide_embedding_text(GUIDES[0])
         self.assertIn(GUIDES[0].title["ko"], text)
         self.assertIn(GUIDES[0].title["en"], text)
-        self.assertIn(GUIDES[0].title["vi"], text)
+        self.assertIn(GUIDES[0].summary["ko"], text)
+        self.assertLess(len(text), 400)
 
     @patch("app.embeddings.acquire_ai_budget", return_value=True)
     def test_semantic_search_redacts_and_returns_database_matches(self, _budget) -> None:

@@ -311,9 +311,11 @@ def search_rag_db(question: str, *, category: Category | None = None, limit: int
     Returns None when the database is unreachable."""
     import time as _time
     from . import embedding_service
-    from .database import fetch_lexical_candidates, search_rag_vectors
+    from .database import fetch_lexical_candidates, rag_index_version, search_rag_vectors
     top_k = limit or settings.rag_top_k
-    cache_key = (re.sub(r"\s+", " ", question.strip().casefold()), category, top_k, embedding_service.signature())
+    # Index version in the key: approving or re-indexing a document bumps the
+    # version (same source the consultation cache uses), invalidating old hits.
+    cache_key = (re.sub(r"\s+", " ", question.strip().casefold()), category, top_k, embedding_service.signature(), rag_index_version())
     cached = _search_cache.get(cache_key)
     if cached and _time.time() - cached[0] < _SEARCH_CACHE_TTL_SECONDS:
         return list(cached[1])
