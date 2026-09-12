@@ -8,10 +8,18 @@ from app.main import get_agency, get_guide, list_guides
 
 class GuideDataTests(unittest.TestCase):
     def test_expected_data_counts(self) -> None:
-        self.assertEqual(len(GUIDES), 10)
+        self.assertEqual(len(GUIDES), 13)
         self.assertEqual(len(AGENCIES), 5)
         self.assertEqual(len(list_guides("residency")), 5)
-        self.assertEqual(len(list_guides("labor")), 5)
+        self.assertEqual(len(list_guides("labor")), 8)
+
+    def test_guides_are_enriched_with_details(self) -> None:
+        for guide in GUIDES:
+            self.assertTrue(guide.target.get("ko"), guide.id)
+            self.assertTrue(guide.common_mistakes.get("ko"), guide.id)
+        unpaid = next(guide for guide in GUIDES if guide.id == "unpaid-wages")
+        self.assertTrue(unpaid.related_documents)
+        self.assertTrue(all(reference.url.startswith("https://") for reference in unpaid.related_documents))
 
     def test_guides_reference_existing_agencies(self) -> None:
         agency_ids = {agency.id for agency in AGENCIES}

@@ -8,10 +8,10 @@ KEYWORDS = {
     "alien-registration": ["외국인등록", "등록증 처음", "alien registration", "register as a foreign", "đăng ký người nước ngoài"],
     "stay-extension": ["체류기간", "연장", "만료", "extension", "expire", "overstay", "gia hạn", "hết hạn"],
     "change-of-address": ["체류지", "주소 변경", "이사", "address", "moved", "moving", "địa chỉ", "chuyển nhà"],
-    "registration-card-reissue": ["등록증 분실", "등록증 재발급", "카드 분실", "lost card", "reissue", "mất thẻ", "cấp lại thẻ"],
+    "registration-card-reissue": ["등록증 분실", "등록증 재발급", "카드 분실", "잃어버렸", "분실했", "lost card", "reissue", "mất thẻ", "cấp lại thẻ"],
     "status-change": ["체류자격 변경", "비자 변경", "change visa", "change of status", "đổi visa", "thay đổi tư cách"],
-    "unpaid-wages": ["임금체불", "월급 안", "월급을 안", "월급 못", "월급을 못", "급여 안", "급여를 안", "돈을 못", "unpaid", "not paid", "wage", "salary", "nợ lương", "chưa trả lương"],
-    "missing-contract": ["계약서 없", "계약서 안", "미작성", "no contract", "without contract", "không có hợp đồng"],
+    "unpaid-wages": ["임금체불", "월급 안", "월급을 안", "월급 못", "월급을 못", "급여 안", "급여를 안", "돈을 못", "못 받", "unpaid", "not paid", "wage", "salary", "nợ lương", "chưa trả lương"],
+    "missing-contract": ["계약서 없", "계약서 안", "계약서를 안", "안 써줘", "미작성", "no contract", "without contract", "không có hợp đồng"],
     "minimum-wage": ["최저임금", "시급", "minimum wage", "hourly pay", "lương tối thiểu", "lương theo giờ"],
     "sudden-dismissal": [
         "해고", "잘렸", "나오지 말", "나오지마", "그만 나오", "출근하지 말", "출근하지마",
@@ -20,6 +20,9 @@ KEYWORDS = {
         "không cần đi làm", "nghỉ việc từ ngày mai",
     ],
     "industrial-accident": ["산재", "일하다 다", "작업 중 사고", "work accident", "injured at work", "industrial accident", "tai nạn lao động", "bị thương khi làm"],
+    "working-hours-overtime": ["근로시간", "연장근로", "야근", "초과근무", "오래 일", "overtime", "working hours", "too many hours", "làm thêm giờ", "tăng ca"],
+    "holiday-work": ["휴일", "주휴", "holiday work", "work on holiday", "ngày nghỉ"],
+    "annual-leave": ["연차", "annual leave", "nghỉ phép"],
 }
 
 MESSAGES = {

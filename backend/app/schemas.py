@@ -7,6 +7,12 @@ Category = Literal["residency", "labor"]
 Language = Literal["ko", "en", "vi"]
 
 
+class GuideReference(BaseModel):
+    title: str
+    url: str
+    publisher: str
+
+
 class Guide(BaseModel):
     id: str
     category: Category
@@ -19,6 +25,9 @@ class Guide(BaseModel):
     source_name: dict[str, str]
     source_url: str
     verified_at: str
+    target: dict[str, str] = Field(default_factory=dict)
+    common_mistakes: dict[str, list[str]] = Field(default_factory=dict)
+    related_documents: list[GuideReference] = Field(default_factory=list)
 
 
 class Agency(BaseModel):
@@ -184,6 +193,15 @@ class OperationsStatus(BaseModel):
     not_helpful: int
 
 
+class RiskItem(BaseModel):
+    level: Literal["SAFE", "CHECK", "WARNING"]
+    clause: str
+    reason: str
+    recommendation: str
+    checks: list[str] = Field(default_factory=list)
+    sources: list[RAGSource] = Field(default_factory=list)
+
+
 class DocumentExplanation(BaseModel):
     language: Language
     summary: str
@@ -193,3 +211,11 @@ class DocumentExplanation(BaseModel):
     cautions: list[str]
     related_guides: list[Guide]
     privacy_redacted: bool
+    document_type: str = "unknown"
+    key_terms: dict[str, str] = Field(default_factory=dict)
+    risk_items: list[RiskItem] = Field(default_factory=list)
+
+
+class RegionInfo(BaseModel):
+    region: str | None = None
+    name: dict[str, str] | None = None

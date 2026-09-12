@@ -22,8 +22,16 @@ class Settings(BaseSettings):
     document_max_bytes: int = 5_000_000
     rag_top_k: int = 6
     rag_similarity_threshold: float = 0.35
+    rag_weight_lexical: float = 1.0
+    rag_weight_vector: float = 1.0
+    rag_weight_authority: float = 0.15
+    rag_weight_freshness: float = 0.05
+    rag_max_evidence: int = 4
+    rag_max_chunks_per_document: int = 2
+    rag_min_confident_relevance: float = 0.35
+    rag_query_rewrite_enabled: bool = False
     rag_debug_enabled: bool = False
-    rag_allowed_domains: str = "law.go.kr,open.law.go.kr,moj.go.kr,immigration.go.kr,hikorea.go.kr,moel.go.kr,minimumwage.go.kr,nlrc.go.kr,comwel.or.kr,jeonbuk.go.kr,liveinkorea.kr"
+    rag_allowed_domains: str = "law.go.kr,open.law.go.kr,moj.go.kr,immigration.go.kr,hikorea.go.kr,moel.go.kr,minimumwage.go.kr,nlrc.go.kr,comwel.or.kr,jeonbuk.go.kr,liveinkorea.kr,gov.kr"
     rag_index_version: str = "1"
     rag_admin_token: str | None = None
     rag_update_enabled: bool = True

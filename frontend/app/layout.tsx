@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "JB Bridge AI",
-  description: "낯선 전북 생활을 하나로 잇다",
+  title: "JBIG — Jeonbuk International Gateway",
+  description: "전북 거주 외국인을 위한 AI 정착지원 플랫폼",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

@@ -1,5 +1,7 @@
 export type Category = "residency" | "labor";
 
+export type GuideReference = { title: string; url: string; publisher: string };
+
 export type Guide = {
   id: string;
   category: Category;
@@ -12,6 +14,9 @@ export type Guide = {
   source_name: Record<string, string>;
   source_url: string;
   verified_at: string;
+  target: Record<string, string>;
+  common_mistakes: Record<string, string[]>;
+  related_documents: GuideReference[];
 };
 
 export type Agency = {
@@ -59,6 +64,15 @@ export type ConsultationResponse = {
 
 export type RAGSource = { document_id: string; chunk_id: string; title: string; publisher: string; url: string; verified_at: string; relevance: number; document_version: string; published_at: string | null; collected_at: string | null; effective_from: string | null; last_checked_at: string | null; freshness_type: "versioned" | "periodically_checked" | "live_verification_required"; freshness_status: string; document_type: string; authority_score: number; trust_level: "high" | "medium" | "low"; trust_reasons: string[] };
 
+export type RiskItem = {
+  level: "SAFE" | "CHECK" | "WARNING";
+  clause: string;
+  reason: string;
+  recommendation: string;
+  checks: string[];
+  sources: RAGSource[];
+};
+
 export type DocumentExplanation = {
   language: "ko" | "en" | "vi";
   summary: string;
@@ -68,7 +82,12 @@ export type DocumentExplanation = {
   cautions: string[];
   related_guides: Guide[];
   privacy_redacted: boolean;
+  document_type: string;
+  key_terms: Record<string, string>;
+  risk_items: RiskItem[];
 };
+
+export type RegionInfo = { region: string | null; name: Record<string, string> | null };
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -86,6 +105,9 @@ export const getGuides = (category?: Category) =>
   apiFetch<Guide[]>(`/api/guides${category ? `?category=${category}` : ""}`);
 
 export const getGuide = (id: string) => apiFetch<Guide>(`/api/guides/${id}`);
+
+export const resolveRegion = (latitude: number, longitude: number) =>
+  apiFetch<RegionInfo>(`/api/regions/resolve?latitude=${latitude}&longitude=${longitude}`);
 
 export const getAgencies = (params: AgencySearchParams = {}) => {
   const query = new URLSearchParams();

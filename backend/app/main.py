@@ -7,7 +7,7 @@ from fastapi import FastAPI, File, Form, Header, HTTPException, Query, Request, 
 from fastapi.middleware.cors import CORSMiddleware
 
 from .config import settings
-from .ai_consultation import generate_grounded_answer, generate_rag_answer, select_guide_semantically
+from .ai_consultation import generate_grounded_answer, generate_rag_answer, rewrite_search_query, select_guide_semantically
 from .consultation import build_consultation, consult
 from .data import AGENCIES, GUIDES
 from .database import approve_rag_version, database_available, get_rag_document_summary, initialize_database, list_pending_rag_versions, load_agencies, load_guides, rag_document_status, rag_index_version, reject_rag_version, save_consultation, save_pending_rag_version
@@ -15,7 +15,8 @@ from .embeddings import search_guides_semantically
 from .document_explanation import explain_document
 from .rag import content_hash, index_documents, register_document, search_index, source_from_chunk
 from .operations import allow_request, cache_key, get_cached, hash_identifier, record_feedback, set_cached, status
-from .schemas import Agency, Category, ConsultationRequest, ConsultationResponse, DocumentExplanation, FeedbackRequest, FeedbackResponse, Guide, HealthResponse, Language, OperationsStatus, RAGDocumentAdminResponse, RAGDocumentCreate
+from .regions import resolve_region
+from .schemas import Agency, Category, ConsultationRequest, ConsultationResponse, DocumentExplanation, FeedbackRequest, FeedbackResponse, Guide, HealthResponse, Language, OperationsStatus, RAGDocumentAdminResponse, RAGDocumentCreate, RegionInfo
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
@@ -63,6 +64,11 @@ def get_guide(guide_id: str) -> Guide:
     return guide
 
 
+@app.get("/api/regions/resolve", response_model=RegionInfo)
+def resolve_region_api(latitude: float = Query(ge=-90, le=90), longitude: float = Query(ge=-180, le=180)) -> RegionInfo:
+    return resolve_region(latitude, longitude)
+
+
 @app.get("/api/agencies", response_model=list[Agency])
 def list_agencies(region: str | None = Query(None), service_type: str | None = Query(None), language: str | None = Query(None), latitude: float | None = Query(None, ge=-90, le=90), longitude: float | None = Query(None, ge=-180, le=180)) -> list[Agency]:
     agencies = load_agencies() or AGENCIES
@@ -105,6 +111,10 @@ def create_consultation(payload: ConsultationRequest, request: Request) -> Consu
     search_question = f"{payload.conversation_context}\n{payload.question}" if payload.conversation_context else payload.question
     result = consult(search_question, payload.language)
     matches = search_index(search_question)
+    if not matches:
+        rewritten = rewrite_search_query(payload.question, safety_identifier=client_hash)
+        if rewritten:
+            matches = search_index(rewritten)
     if matches:
         result = generate_rag_answer(result, payload.question, matches, safety_identifier=client_hash)
         # Keep RAG as the answer mode while using the existing semantic guide

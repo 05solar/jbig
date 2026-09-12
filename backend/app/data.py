@@ -60,6 +60,18 @@ TRANSLATIONS = {
         "en": ("Get treatment and claim workers' compensation for a work injury or illness.", ["For an emergency, call 119 or seek medical care immediately.", "Record when, where, and how it happened and any witnesses.", "Ask the compensation service about filing a claim."], ["Diagnosis and medical records", "Evidence from the accident scene", "Proof of employment", "Witness information"], ["You can seek help without your employer's approval.", "In an emergency, treatment comes before paperwork."]),
         "vi": ("Điều trị và yêu cầu bảo hiểm tai nạn khi bị thương hoặc bệnh do công việc.", ["Trong trường hợp khẩn cấp, gọi 119 hoặc đến cơ sở y tế ngay.", "Ghi thời gian, địa điểm, diễn biến và người chứng kiến.", "Tư vấn cơ quan bồi thường về việc nộp đơn."], ["Chẩn đoán và hồ sơ y tế", "Bằng chứng tại hiện trường", "Giấy tờ chứng minh quan hệ lao động", "Thông tin người chứng kiến"], ["Có thể yêu cầu hỗ trợ mà không cần chủ sử dụng đồng ý.", "Trong trường hợp khẩn cấp, điều trị là ưu tiên."]),
     },
+    "working-hours-overtime": {
+        "en": ("Check statutory working hours and overtime pay.", ["Check the agreed working hours in your contract.", "Track your actual hours with attendance records.", "Check your payslip for overtime, night, and holiday premiums.", "If something looks wrong, contact 1350 or the labor office."], ["Employment contract", "Attendance records", "Payslips"], ["Overtime has legal limits and premium-pay rules.", "Whether a violation occurred must be confirmed by the authorities."]),
+        "vi": ("Kiểm tra giờ làm việc theo luật và phụ cấp tăng ca.", ["Kiểm tra giờ làm việc thỏa thuận trong hợp đồng.", "Ghi lại giờ làm thực tế bằng lịch chấm công.", "Kiểm tra phiếu lương về phụ cấp tăng ca, làm đêm, ngày nghỉ.", "Nếu có vấn đề, liên hệ 1350 hoặc cơ quan lao động."], ["Hợp đồng lao động", "Lịch sử chấm công", "Phiếu lương"], ["Tăng ca có giới hạn pháp lý và quy định phụ cấp.", "Việc vi phạm hay không cần cơ quan chức năng xác nhận."]),
+    },
+    "holiday-work": {
+        "en": ("Understand paid holidays and holiday-work premiums.", ["Check the holiday terms in your contract.", "Record the dates and hours you worked on holidays.", "Check your payslip for holiday-work premiums.", "Contact 1350 if pay looks incorrect."], ["Employment contract", "Work schedule records", "Payslips"], ["Premiums may apply to holiday work.", "Standards vary by workplace and contract, so confirm officially."]),
+        "vi": ("Tìm hiểu ngày nghỉ có lương và phụ cấp làm việc ngày nghỉ.", ["Kiểm tra điều khoản ngày nghỉ trong hợp đồng.", "Ghi lại ngày và giờ đã làm việc vào ngày nghỉ.", "Kiểm tra phiếu lương về phụ cấp ngày nghỉ.", "Liên hệ 1350 nếu tiền lương có vấn đề."], ["Hợp đồng lao động", "Lịch làm việc", "Phiếu lương"], ["Làm việc ngày nghỉ có thể được phụ cấp thêm.", "Tiêu chuẩn khác nhau theo nơi làm việc, cần xác nhận chính thức."]),
+    },
+    "annual-leave": {
+        "en": ("Check your paid annual leave entitlement and how to use it.", ["Check your tenure and attendance rate.", "Ask how to request leave at your workplace.", "Keep records of leave requests and approvals.", "Contact 1350 if leave is refused without reason."], ["Employment contract", "Attendance records", "Leave request records"], ["Annual leave days depend on tenure and attendance.", "Unused-leave rules follow the law and your contract."]),
+        "vi": ("Kiểm tra quyền nghỉ phép năm có lương và cách sử dụng.", ["Kiểm tra thời gian làm việc và tỷ lệ đi làm.", "Hỏi cách đăng ký nghỉ phép tại nơi làm việc.", "Giữ hồ sơ đăng ký và phê duyệt nghỉ phép.", "Liên hệ 1350 nếu bị từ chối không lý do."], ["Hợp đồng lao động", "Lịch sử chấm công", "Hồ sơ xin nghỉ phép"], ["Số ngày nghỉ phép phụ thuộc thời gian làm việc.", "Quy định phép chưa dùng theo luật và hợp đồng."]),
+    },
 }
 
 
@@ -86,4 +98,68 @@ GUIDES = [
     make_guide("minimum-wage", "labor", ("최저임금 확인", "Check minimum wage", "Kiểm tra lương tối thiểu"), "내 시급이 법정 최저임금 이상인지 확인하는 방법입니다.", ["해당 연도의 공식 최저임금을 확인합니다.", "급여명세서에서 기본급과 근로시간을 확인합니다.", "임금 항목이 불분명하면 상담합니다."], ["근로계약서", "급여명세서", "출퇴근 기록"], ["최저임금은 매년 달라집니다.", "월급은 소정근로시간 등을 반영해 비교해야 합니다."], ["labor-office"], ("최저임금위원회", "https://www.minimumwage.go.kr/")),
     make_guide("sudden-dismissal", "labor", ("갑작스러운 해고", "Sudden dismissal", "Bị sa thải đột ngột"), "예고 없이 해고 통보를 받았을 때 대응 순서입니다.", ["해고 사유와 날짜를 서면으로 요청합니다.", "계약서와 통보 기록을 보관합니다.", "노동관서 또는 노동위원회 상담을 받습니다."], ["근로계약서", "해고 통지", "급여명세서", "문자·메신저 기록"], ["감정적으로 사직서를 작성하지 마세요.", "구제신청에는 기간 제한이 있을 수 있습니다."], ["labor-office", "danuri"], MOEL),
     make_guide("industrial-accident", "labor", ("산업재해", "Industrial accident", "Tai nạn lao động"), "일하다 다치거나 질병이 생겼을 때 치료와 산재 신청을 안내합니다.", ["위급하면 즉시 119 또는 의료기관의 도움을 받습니다.", "사고 경위와 목격자를 기록합니다.", "근로복지공단에 산재 신청을 상담합니다."], ["진단서·의무기록", "사고 현장 자료", "근로관계 입증자료", "목격자 정보"], ["사업주 동의 없이도 산재 신청 상담이 가능합니다.", "응급 상황에서는 치료가 먼저입니다."], ["workers-comp", "labor-office"], ("근로복지공단", "https://www.comwel.or.kr/")),
+    make_guide("working-hours-overtime", "labor", ("근로시간과 연장근로", "Working hours & overtime", "Giờ làm việc & tăng ca"), "법정 근로시간과 연장근로 수당을 확인하는 방법입니다.", ["근로계약서의 소정근로시간을 확인합니다.", "출퇴근 기록으로 실제 근로시간을 정리합니다.", "연장·야간·휴일근로 수당 지급 여부를 급여명세서에서 확인합니다.", "문제가 있으면 1350 또는 관할 노동관서에 상담합니다."], ["근로계약서", "출퇴근 기록", "급여명세서"], ["연장근로에는 법령상 한도와 가산수당 기준이 있습니다.", "구체적인 위반 여부는 기관 확인이 필요합니다."], ["labor-office", "danuri"], MOEL),
+    make_guide("holiday-work", "labor", ("휴일과 휴일근무", "Holidays & holiday work", "Ngày nghỉ & làm việc ngày nghỉ"), "휴일 보장과 휴일근무 수당을 확인하는 방법입니다.", ["근로계약서의 휴일 조항을 확인합니다.", "휴일에 일한 날짜와 시간을 기록합니다.", "급여명세서에서 휴일근무 수당 지급 여부를 확인합니다.", "지급에 문제가 있으면 1350에 상담합니다."], ["근로계약서", "근무 일정 기록", "급여명세서"], ["휴일 근무에는 가산수당이 적용될 수 있습니다.", "기준은 사업장과 계약에 따라 다르므로 공식 확인이 필요합니다."], ["labor-office", "danuri"], MOEL),
+    make_guide("annual-leave", "labor", ("연차휴가 사용", "Annual leave", "Nghỉ phép năm"), "연차 유급휴가 발생 요건과 사용 방법을 확인합니다.", ["근무 기간과 출근율을 확인합니다.", "사업장의 연차 신청 방법을 확인합니다.", "연차 신청과 승인 기록을 남깁니다.", "이유 없이 거부되면 1350에 상담합니다."], ["근로계약서", "출근 기록", "연차 신청 기록"], ["연차 일수는 근무 기간과 출근율에 따라 달라집니다.", "미사용 연차 처리는 법령과 계약 기준을 따릅니다."], ["labor-office", "danuri"], MOEL),
 ]
+
+# ---- Guide detail enrichment: target audience, common mistakes, official references ----
+
+GUIDE_TARGETS = {
+    "alien-registration": {"ko": "한국에 장기 체류를 시작하는 외국인", "en": "Foreign nationals starting a long-term stay in Korea", "vi": "Người nước ngoài bắt đầu cư trú dài hạn tại Hàn Quốc"},
+    "stay-extension": {"ko": "체류 만료일이 다가오는 등록 외국인", "en": "Registered residents whose stay is about to expire", "vi": "Người đã đăng ký sắp hết hạn cư trú"},
+    "change-of-address": {"ko": "이사한 등록 외국인", "en": "Registered residents who have moved", "vi": "Người đã đăng ký vừa chuyển nhà"},
+    "registration-card-reissue": {"ko": "등록증을 잃어버렸거나 훼손한 외국인", "en": "Residents with a lost or damaged card", "vi": "Người bị mất hoặc hỏng thẻ cư trú"},
+    "status-change": {"ko": "활동 목적이 바뀌는 외국인(유학→취업 등)", "en": "Residents whose purpose of stay is changing", "vi": "Người thay đổi mục đích lưu trú"},
+    "unpaid-wages": {"ko": "임금을 받지 못한 근로자", "en": "Workers with unpaid wages", "vi": "Người lao động chưa được trả lương"},
+    "missing-contract": {"ko": "서면 계약서를 받지 못한 근로자", "en": "Workers without a written contract", "vi": "Người lao động không có hợp đồng bằng văn bản"},
+    "minimum-wage": {"ko": "시급·월급이 적정한지 확인하려는 근로자", "en": "Workers checking their pay level", "vi": "Người lao động muốn kiểm tra mức lương"},
+    "sudden-dismissal": {"ko": "갑작스럽게 해고 통보를 받은 근로자", "en": "Workers dismissed without notice", "vi": "Người lao động bị sa thải đột ngột"},
+    "industrial-accident": {"ko": "일하다 다치거나 질병이 생긴 근로자", "en": "Workers injured or ill from work", "vi": "Người lao động bị thương hoặc bệnh do công việc"},
+    "working-hours-overtime": {"ko": "장시간 근무나 수당 문제가 걱정되는 근로자", "en": "Workers concerned about hours or overtime pay", "vi": "Người lao động lo về giờ làm và phụ cấp"},
+    "holiday-work": {"ko": "휴일에도 일하는 근로자", "en": "Workers who work on holidays", "vi": "Người lao động làm việc vào ngày nghỉ"},
+    "annual-leave": {"ko": "연차 사용이 어려운 근로자", "en": "Workers who cannot use annual leave", "vi": "Người lao động khó sử dụng nghỉ phép"},
+}
+
+GUIDE_MISTAKES = {
+    "alien-registration": {"ko": ["신고 기한을 지나서 신청하는 경우", "체류자격별 추가서류를 준비하지 않는 경우"], "en": ["Applying after the deadline", "Missing status-specific documents"], "vi": ["Nộp sau thời hạn", "Thiếu giấy tờ theo tư cách lưu trú"]},
+    "stay-extension": {"ko": ["만료일이 지난 뒤에 신청하는 경우", "온라인 신청 대상 여부를 확인하지 않는 경우"], "en": ["Applying after expiry", "Not checking online eligibility"], "vi": ["Nộp sau khi hết hạn", "Không kiểm tra điều kiện nộp trực tuyến"]},
+    "change-of-address": {"ko": ["이사 후 신고를 미루는 경우", "실제 거주를 증명할 서류를 준비하지 않는 경우"], "en": ["Delaying the report after moving", "No proof of actual residence"], "vi": ["Trì hoãn khai báo sau khi chuyển nhà", "Không có giấy tờ chứng minh nơi ở"]},
+    "registration-card-reissue": {"ko": ["분실 후 재발급 신청을 미루는 경우", "사진 규격을 확인하지 않는 경우"], "en": ["Delaying reissue after loss", "Wrong photo specifications"], "vi": ["Trì hoãn xin cấp lại sau khi mất", "Sai quy cách ảnh"]},
+    "status-change": {"ko": ["허가 전에 새 활동을 시작하는 경우", "요건을 확인하지 않고 신청하는 경우"], "en": ["Starting the new activity before approval", "Applying without checking requirements"], "vi": ["Bắt đầu hoạt động mới trước khi được phép", "Nộp mà không kiểm tra điều kiện"]},
+    "unpaid-wages": {"ko": ["증거 없이 구두로만 항의하는 경우", "원본 자료를 사업주에게 넘겨주는 경우"], "en": ["Complaining verbally without evidence", "Handing original evidence to the employer"], "vi": ["Chỉ phản đối bằng lời, không có bằng chứng", "Đưa bản gốc bằng chứng cho chủ"]},
+    "missing-contract": {"ko": ["이해하지 못한 계약서에 서명하는 경우", "합의 내용을 기록으로 남기지 않는 경우"], "en": ["Signing a contract you do not understand", "Not recording the agreed terms"], "vi": ["Ký hợp đồng không hiểu rõ", "Không ghi lại nội dung thỏa thuận"]},
+    "minimum-wage": {"ko": ["수당을 포함해 시급을 계산하는 경우", "해당 연도 기준을 확인하지 않는 경우"], "en": ["Including allowances in the hourly rate", "Not checking the current-year rate"], "vi": ["Tính phụ cấp vào lương giờ", "Không kiểm tra mức của năm hiện tại"]},
+    "sudden-dismissal": {"ko": ["압박 속에 사직서를 쓰는 경우", "해고 통보 기록을 남기지 않는 경우"], "en": ["Writing a resignation letter under pressure", "Not keeping dismissal records"], "vi": ["Viết đơn xin nghỉ do bị ép", "Không giữ bằng chứng sa thải"]},
+    "industrial-accident": {"ko": ["치료보다 서류를 먼저 챙기는 경우", "사업주 동의가 필요하다고 오해하는 경우"], "en": ["Prioritizing paperwork over treatment", "Assuming employer approval is required"], "vi": ["Ưu tiên giấy tờ hơn điều trị", "Tưởng cần chủ đồng ý mới được nộp"]},
+    "working-hours-overtime": {"ko": ["출퇴근 기록을 남기지 않는 경우", "수당 없이 연장근로를 계속하는 경우"], "en": ["Not keeping attendance records", "Continuing unpaid overtime"], "vi": ["Không ghi lại giờ làm", "Tiếp tục tăng ca không phụ cấp"]},
+    "holiday-work": {"ko": ["휴일 근무 기록을 남기지 않는 경우", "수당 미지급을 그냥 넘어가는 경우"], "en": ["Not recording holiday work", "Ignoring missing premiums"], "vi": ["Không ghi lại làm việc ngày nghỉ", "Bỏ qua phụ cấp bị thiếu"]},
+    "annual-leave": {"ko": ["연차 신청 기록을 남기지 않는 경우", "미사용 연차 처리를 확인하지 않는 경우"], "en": ["Not recording leave requests", "Not checking unused-leave rules"], "vi": ["Không lưu hồ sơ xin nghỉ", "Không kiểm tra quy định phép chưa dùng"]},
+}
+
+GUIDE_RELATED_DOCS = {
+    "alien-registration": ["hikorea-alien-registration"],
+    "stay-extension": ["hikorea-stay-extension-application", "hikorea-stay-extension-status"],
+    "change-of-address": ["gov24-address-change-report"],
+    "registration-card-reissue": ["immigration-residence-card-loss-reissue"],
+    "status-change": ["hikorea-status-change-permission"],
+    "unpaid-wages": ["moel-unpaid-wage-claim", "moel-unpaid-dismissal-together"],
+    "missing-contract": ["moel-written-employment-contract"],
+    "minimum-wage": ["minimumwage-check-guide"],
+    "sudden-dismissal": ["moel-unpaid-dismissal-together"],
+    "working-hours-overtime": ["moel-overtime-limit", "moel-employment-contract-working-hours"],
+    "holiday-work": ["moel-holiday-work"],
+    "annual-leave": ["moel-annual-leave"],
+}
+
+
+def _enrich_guides() -> None:
+    from .rag import SAMPLE_DOCUMENTS
+    from .schemas import GuideReference
+    documents = {document.document_id: document for document, _ in SAMPLE_DOCUMENTS}
+    for index, guide in enumerate(GUIDES):
+        references = [GuideReference(title=documents[doc_id].title, url=documents[doc_id].source_url, publisher=documents[doc_id].publisher) for doc_id in GUIDE_RELATED_DOCS.get(guide.id, []) if doc_id in documents]
+        GUIDES[index] = guide.model_copy(update={"target": GUIDE_TARGETS.get(guide.id, {}), "common_mistakes": GUIDE_MISTAKES.get(guide.id, {}), "related_documents": references})
+
+
+_enrich_guides()
