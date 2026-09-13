@@ -2,6 +2,13 @@
 
 작업(명령) 수행 시마다 이 파일에 간략한 내역을 추가합니다. 규칙은 [agent.md](./agent.md) 참조. 최신 항목이 위.
 
+## 2026-09-13 — 공식문서 크롤러 도입·RAG 코퍼스 1차 확장 (25→59건)
+- app/crawler/ 신설(7모듈): 허용 도메인 전용 fetcher(robots·1초 간격·백오프), HTML/PDF 파서(EUC-KR 감지·메뉴 제거), 관련성/품질 필터, URL·해시 중복제거, 사이트별 SourceSpec, review_pending 등록 파이프라인 + CLI `crawl_official_docs`(--dry-run/--review/--approved-only-index)
+- 승인 워크플로 보강: save_pending_rag_version 컬럼 누락 버그 수정, 신규 크롤 문서용 save_crawled_document_pending, 승인 시 자동 로컬 임베딩+search_tokens(index_approved_document), 검수 큐 상세화(품질점수 정렬)
+- 1차 실수집: 고용노동부 FAQ·1350 상담·최저임금위·다누리·전북도 5개 사이트 → 후보 45건 등록, 검수 승인 34건·거절 11건(통계/중복/개인사례), 전량 로컬 384차원 임베딩. 표 청크는 벡터 제외(lexical 전용) — MiniLM 허브 벡터 문제 차단, DB 벡터 후보 임계 0.60 분리
+- 픽스처 53→92케이스(+39, 한·영·베), Hit@1/3/5=1.0·MRR=1.0 유지. 테스트 207→248개(크롤러 41, 실DB 워크플로·실크롤링 포함), OpenAI 호출 0회
+- 문서: docs/crawler.md, app/crawler/README.md, tests/crawler/README.md
+
 ## 2026-09-13 — 파일 주석·테스트 폴더 재구성·진행 대장 도입 + 채팅 엔터 버그 수정
 - 소스 66개 파일 첫 줄에 한국어 기능 설명 주석 일괄 삽입 (.py/.ts/.tsx/.css)
 - backend/tests를 기능별 6개 패키지(rag/chat/documents/data/infra/smoke)로 분리, 각 폴더 README.md·__init__.py 추가, cross-import·fixtures 경로 수정

@@ -9,6 +9,7 @@
 | [rag-pipeline.md](./rag-pipeline.md) | **공식 문서 수집 → 청크 분할 → 토큰/임베딩 → 저장** 색인 파이프라인 |
 | [rag-chatbot.md](./rag-chatbot.md) | **챗봇**이 RAG를 활용하는 구조: 하이브리드 검색, 랭킹, 증거 선택, 답변 모드 |
 | [rag-document-review.md](./rag-document-review.md) | **OCR 문서 분석**이 RAG를 활용하는 구조: 위험 규칙 → DB 근거 → 기준 비교 |
+| [crawler.md](./crawler.md) | **공식문서 크롤러**: 선별 수집 → 정제·중복제거 → review_pending → 승인 후 임베딩 |
 
 ## 폴더별 파일 설명
 

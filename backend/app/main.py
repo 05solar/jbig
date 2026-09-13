@@ -14,7 +14,7 @@ from .data import AGENCIES, GUIDES
 from .database import approve_rag_version, database_available, get_rag_document_summary, initialize_database, list_pending_rag_versions, load_agencies, load_guides, rag_document_status, rag_index_version, reject_rag_version, save_consultation, save_pending_rag_version
 from .embeddings import search_guides_semantically
 from .document_explanation import explain_document
-from .rag import content_hash, index_documents, register_document, search_index, source_from_chunk
+from .rag import content_hash, index_approved_document, index_documents, register_document, search_index, source_from_chunk
 from .operations import allow_request, cache_key, get_cached, hash_identifier, record_feedback, set_cached, status
 from .regions import resolve_region
 from .schemas import Agency, Category, ConsultationRequest, ConsultationResponse, DocumentExplanation, FeedbackRequest, FeedbackResponse, Guide, HealthResponse, Language, OperationsStatus, RAGDocumentAdminResponse, RAGDocumentCreate, RegionInfo
@@ -177,9 +177,11 @@ def rag_admin_pending(x_rag_admin_token: str | None = Header(default=None)):
 @app.post("/api/admin/rag/versions/{version_id}/approve")
 def approve_rag_document_version(version_id: str, reviewed_by: str = Query(min_length=2, max_length=120), note: str = Query(default="", max_length=1000), x_rag_admin_token: str | None = Header(default=None)):
     require_rag_admin(x_rag_admin_token)
-    if not approve_rag_version(version_id, reviewed_by, note):
+    document_id = approve_rag_version(version_id, reviewed_by, note)
+    if not document_id:
         raise HTTPException(status_code=404, detail="Pending document version not found")
-    return {"approved": True, "version_id": version_id, "index_version": rag_index_version()}
+    embedding = index_approved_document(document_id)
+    return {"approved": True, "version_id": version_id, "document_id": document_id, "embedding": embedding, "index_version": rag_index_version()}
 
 
 @app.post("/api/admin/rag/versions/{version_id}/reject")

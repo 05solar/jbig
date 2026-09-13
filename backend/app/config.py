@@ -26,6 +26,10 @@ class Settings(BaseSettings):
     rag_model_cache_dir: str | None = None
     rag_db_lexical_candidates: int = 20
     rag_db_vector_candidates: int = 20
+    # MiniLM cosine for unrelated Korean prose sits around 0.5~0.6; below this the
+    # vector channel adds noise that drowns lexically-correct matches (measured on
+    # the 59-document corpus). High-confidence vector matches still contribute.
+    rag_db_vector_similarity_threshold: float = 0.60
     vector_similarity_threshold: float = 0.44
     document_max_bytes: int = 5_000_000
     ocr_enabled: bool = True
@@ -48,6 +52,15 @@ class Settings(BaseSettings):
     rag_debug_enabled: bool = False
     rag_allowed_domains: str = "law.go.kr,open.law.go.kr,moj.go.kr,immigration.go.kr,hikorea.go.kr,moel.go.kr,minimumwage.go.kr,nlrc.go.kr,comwel.or.kr,jeonbuk.go.kr,liveinkorea.kr,gov.kr"
     rag_index_version: str = "1"
+    crawler_enabled: bool = True
+    crawler_user_agent: str = "JB-Bridge-OfficialCrawler/1.0 (+https://github.com/05solar/jbig)"
+    crawler_request_delay_ms: int = 1000
+    crawler_max_concurrency: int = 2
+    crawler_timeout_seconds: float = 10.0
+    crawler_min_content_chars: int = 300
+    crawler_max_retries: int = 3
+    crawler_max_detail_pages: int = 50
+    crawler_respect_robots: bool = True
     rag_admin_token: str | None = None
     rag_update_enabled: bool = True
     source_fetch_timeout: float = 15.0

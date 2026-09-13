@@ -3,6 +3,7 @@ import argparse
 import json
 
 from .database import approve_rag_version, initialize_database, list_pending_rag_versions, reject_rag_version
+from .rag import index_approved_document
 from .updates import check_source_updates
 
 
@@ -27,7 +28,12 @@ def main() -> None:
     elif args.command == "list-pending-updates":
         print(json.dumps(list_pending_rag_versions() or [], ensure_ascii=False, indent=2))
     elif args.command == "approve-document-version":
-        print("approved" if approve_rag_version(args.version_id, args.reviewed_by, args.note) else "not found or already reviewed")
+        document_id = approve_rag_version(args.version_id, args.reviewed_by, args.note)
+        if document_id:
+            embedding = index_approved_document(document_id)
+            print(json.dumps({"approved": True, "document_id": document_id, "embedding": embedding}, ensure_ascii=False))
+        else:
+            print("not found or already reviewed")
     elif args.command == "reject-document-version":
         print("rejected" if reject_rag_version(args.version_id, args.reviewed_by, args.note) else "not found or already reviewed")
 

@@ -181,6 +181,8 @@ QUERY_ALIASES = {
     "tiền nhà": "공제", "실제로는": "실제",
     "fired": "해고", "dismissal": "해고", "sa thải": "해고", "lương": "임금",
     "sinh viên": "유학생", "làm thêm": "시간제취업",
+    "기숙사비": "숙소비", "사본": "교부", "52시간": "연장근로 근로시간",
+    "address change": "체류지 변경", "report": "신고", "deduct": "공제",
 }
 
 
@@ -192,7 +194,7 @@ def _tokens(text: str) -> set[str]:
     tokens = {token for token in re.findall(r"[a-z0-9가-힣]{2,}", normalized) if token not in stopwords}
     # Preserve useful Korean compound prefixes for matching a question such as
     # "임금을" with a reviewed source titled "임금체불".
-    for compound, prefix in (("임금체불", "임금"), ("임금체불", "임금체불"), ("부당해고", "해고"), ("근무시간", "근무"), ("근로계약서", "근로계약서"), ("외국인등록증", "등록증"), ("체류기간", "체류"), ("최저임금", "최저임금"), ("연차", "연차"), ("퇴직금", "퇴직금"), ("퇴직", "퇴직"), ("휴일", "휴일"), ("분실", "분실"), ("재발급", "재발급"), ("연장근로", "연장근로")):
+    for compound, prefix in (("임금체불", "임금"), ("임금체불", "임금체불"), ("부당해고", "해고"), ("근무시간", "근무"), ("근로계약서", "근로계약서"), ("외국인등록증", "등록증"), ("체류기간", "체류"), ("최저임금", "최저임금"), ("연차", "연차"), ("퇴직금", "퇴직금"), ("퇴직", "퇴직"), ("휴일", "휴일"), ("분실", "분실"), ("재발급", "재발급"), ("연장근로", "연장근로"), ("해고", "해고"), ("휴게", "휴게"), ("야간", "야간"), ("수당", "수당"), ("주휴", "주휴"), ("위약금", "위약금"), ("통합신청서", "통합신청서"), ("교부", "교부"), ("공제", "공제"), ("신고", "신고"), ("주휴수당", "주휴일"), ("주휴일", "주휴일"), ("사회통합프로그램", "사회통합프로그램"), ("지역특화형", "지역특화형")):
         if compound in normalized:
             tokens.add(prefix)
     return tokens
@@ -344,7 +346,7 @@ def search_rag_db(question: str, *, category: Category | None = None, limit: int
     vector_ms = 0.0
     if query_vector is not None:
         t_vec = _time.perf_counter()
-        vector_rows = search_rag_vectors(query_vector, settings.rag_db_vector_candidates, settings.rag_similarity_threshold, model=embedding_service.signature())
+        vector_rows = search_rag_vectors(query_vector, settings.rag_db_vector_candidates, settings.rag_db_vector_similarity_threshold, model=embedding_service.signature())
         vector_ms = (_time.perf_counter() - t_vec) * 1000
     if lexical_rows is None and vector_rows is None:
         return None
@@ -454,6 +456,44 @@ def trust_for_document(document: RAGDocument, freshness_status: str | None = Non
     score = round(max(0.0, min(1.0, score)), 2)
     level = "high" if score >= 0.8 else "medium" if score >= 0.62 else "low"
     return score, level, reasons
+
+
+def is_low_semantic_chunk(text: str) -> bool:
+    """Data-table chunks (contact lists, statistics rows) must not get vectors.
+
+    MiniLM embeds keyword-salad tables as near-universal "hub" vectors that
+    outrank real answers for unrelated questions; such chunks stay findable
+    through lexical search_tokens only."""
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
+    if len(lines) < 8:
+        return False
+    # Character-weighted: FAQ pages contain many short label lines (질의/답변 …)
+    # but their prose answers dominate by characters; tables do not.
+    data_chars = sum(len(line) for line in lines if len(line) <= 14 or re.search(r"\d{2,4}-\d{3,4}-\d{4}", line) or line.isdigit())
+    total_chars = sum(len(line) for line in lines)
+    return total_chars > 0 and data_chars / total_chars > 0.5
+
+
+def index_approved_document(document_id: str) -> dict[str, int]:
+    """Post-approval step (§17): chunk rows already exist from the approved
+    version; fill local embeddings + search_tokens and invalidate the search cache.
+
+    Uses the shared local EmbeddingService only — never the OpenAI API here."""
+    from . import embedding_service
+    from .database import embed_document_chunks
+
+    if embedding_service.signature() != "none":
+        def embed(texts: list[str]) -> list[list[float] | None] | None:
+            vectors = embedding_service.embed_texts([redact_for_embedding(text) for text in texts])
+            if vectors is None:
+                return None
+            return [None if is_low_semantic_chunk(text) else vector for text, vector in zip(texts, vectors)]
+    else:
+        def embed(texts: list[str]) -> None:
+            return None
+    summary = embed_document_chunks(document_id, embed, _tokens, embedding_service.signature())
+    _search_cache.clear()
+    return summary
 
 
 def index_documents(*, documents: tuple[tuple[RAGDocument, list[OfficialChunk]], ...] = SAMPLE_DOCUMENTS, embedding_factory=None) -> tuple[int, int]:

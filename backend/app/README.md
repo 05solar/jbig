@@ -42,11 +42,18 @@
 | `database.py` | PostgreSQL 접근 계층 전부(실패 허용·메모리 폴백): 스키마 idempotent 마이그레이션, RAG 문서/청크 저장·후보 검색(`fetch_lexical_candidates`)·벡터 검색, 버전 승인/거절, 재임베딩, 상담·피드백·AI 예산 |
 | `operations.py` | 인메모리 운영 계층: 레이트리밋(슬라이딩 윈도), 상담 캐시, 일일 AI 예산, 지표, IP 해시 |
 
-## ⑥ CLI 스크립트
+## ⑥ 공식문서 크롤러
 
 | 파일 | 기능 |
 |------|------|
-| `cli.py` | RAG 운영: check-source-updates / list-pending-updates / approve·reject-document-version |
+| [`crawler/`](./crawler/README.md) | 공식 사이트 선별 수집기(목록→상세, robots·rate limit·중복제거·품질점수) — **review_pending으로만 등록**, 승인 후에만 chunk+로컬 임베딩. 상세: [docs/crawler.md](../../docs/crawler.md) |
+
+## ⑦ CLI 스크립트
+
+| 파일 | 기능 |
+|------|------|
+| `cli.py` | RAG 운영: check-source-updates / list-pending-updates / approve·reject-document-version(승인 시 자동 임베딩) |
+| `crawl_official_docs.py` | 공식문서 크롤링: `--dry-run`(탐색만) / `--review`(review_pending 등록) / `--approved-only-index`(승인 문서 임베딩), `--domain --category --limit --since` |
 | `index_rag.py` | 공식 문서 색인, `--reembed`로 임베딩·토큰 재생성 |
 | `embed_guides.py` | 가이드 임베딩, `--reembed` 지원 |
 | `db_init.py` | DB 스키마 생성·시드 |
