@@ -1,9 +1,9 @@
 # 공식 문서 색인과 임베딩 재생성(--reembed) CLI를 제공하는 파일
 import argparse
 
-from . import embedding_service
-from .database import initialize_database, reembed_rag_chunks
-from .rag import _tokens, index_documents
+from ..retrieval import embedding_service
+from ..infra.database import initialize_database, reembed_rag_chunks
+from ..retrieval.rag import _tokens, index_documents
 
 
 def main() -> None:

@@ -2,9 +2,9 @@
 import argparse
 import json
 
-from .database import approve_rag_version, initialize_database, list_pending_rag_versions, reject_rag_version
-from .rag import index_approved_document
-from .updates import check_source_updates
+from ..infra.database import approve_rag_version, initialize_database, list_pending_rag_versions, reject_rag_version
+from ..retrieval.rag import index_approved_document
+from ..retrieval.updates import check_source_updates
 
 
 def main() -> None:

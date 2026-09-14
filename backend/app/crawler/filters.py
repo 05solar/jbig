@@ -8,8 +8,8 @@ from __future__ import annotations
 import re
 from urllib.parse import urlparse
 
-from ..config import settings
-from ..rag import is_specific_source_url
+from ..core.config import settings
+from ..retrieval.rag import is_specific_source_url
 from .base import CrawlCandidate, SourceSpec
 
 DENY_URL_HINTS = ("/recruit", "/organization", "/photo", "/gallery", "/event", "/press", "/news", "/login", "/member", "/search", "/eng/", "/kids", "greeting", "sitemap", "privacy", "copyright")

@@ -3,10 +3,10 @@
 import unittest
 from unittest.mock import MagicMock, patch
 
-import app.embedding_service as embedding_service
-import app.rag as rag
-from app.config import settings
-from app.rag import SAMPLE_DOCUMENTS, search_index, search_official_documents, search_rag_db
+import app.retrieval.embedding_service as embedding_service
+import app.retrieval.rag as rag
+from app.core.config import settings
+from app.retrieval.rag import SAMPLE_DOCUMENTS, search_index, search_official_documents, search_rag_db
 
 
 def local_model_ready() -> bool:
@@ -96,8 +96,8 @@ class DbSearchServiceTests(unittest.TestCase):
         rag._search_cache.clear()
 
     def test_embedding_failure_falls_back_to_lexical_only(self) -> None:
-        with patch("app.database.fetch_lexical_candidates", side_effect=make_fake_fetch(DB_ROWS)), \
-             patch("app.embedding_service.embed_text", return_value=None):
+        with patch("app.infra.database.fetch_lexical_candidates", side_effect=make_fake_fetch(DB_ROWS)), \
+             patch("app.retrieval.embedding_service.embed_text", return_value=None):
             results = search_rag_db("숙소비를 월급에서 공제했어요", category="labor")
         self.assertTrue(results)
         self.assertEqual(results[0][0].document.document_id, "moel-wage-deduction-housing")
@@ -109,9 +109,9 @@ class DbSearchServiceTests(unittest.TestCase):
             captured["vector_limit"] = limit
             return []
 
-        with patch("app.database.fetch_lexical_candidates", side_effect=make_fake_fetch(DB_ROWS, captured)), \
-             patch("app.embedding_service.embed_text", return_value=[0.1] * settings.embedding_dimensions), \
-             patch("app.database.search_rag_vectors", side_effect=fake_vectors):
+        with patch("app.infra.database.fetch_lexical_candidates", side_effect=make_fake_fetch(DB_ROWS, captured)), \
+             patch("app.retrieval.embedding_service.embed_text", return_value=[0.1] * settings.embedding_dimensions), \
+             patch("app.infra.database.search_rag_vectors", side_effect=fake_vectors):
             search_rag_db("임금체불 문제", category="labor")
         self.assertEqual(captured["lexical_limit"], settings.rag_db_lexical_candidates)
         self.assertEqual(captured["vector_limit"], settings.rag_db_vector_candidates)
@@ -119,8 +119,8 @@ class DbSearchServiceTests(unittest.TestCase):
     def test_synthetic_corpus_never_loads_full_rows(self) -> None:
         base_doc = SAMPLE_DOCUMENTS[0][0]
         synthetic = [(base_doc.model_copy(update={"document_id": f"synthetic-{i}"}), f"synthetic-{i}:0", f"합성 청크 {i} 임금 관련 내용", 0) for i in range(5000)]
-        with patch("app.database.fetch_lexical_candidates", side_effect=make_fake_fetch(DB_ROWS + synthetic)) as fetch, \
-             patch("app.database.load_rag_chunks", side_effect=AssertionError("full corpus load during search")):
+        with patch("app.infra.database.fetch_lexical_candidates", side_effect=make_fake_fetch(DB_ROWS + synthetic)) as fetch, \
+             patch("app.infra.database.load_rag_chunks", side_effect=AssertionError("full corpus load during search")):
             results = search_rag_db("임금체불 진정 절차", category="labor")
         self.assertIsNotNone(results)
         self.assertLessEqual(len(results), settings.rag_top_k)
@@ -132,27 +132,27 @@ class DbSearchServiceTests(unittest.TestCase):
         lexical_only = search_official_documents("임금체불 진정", category="labor", chunks=[chunk], limit=5)
         self.assertTrue(lexical_only)
         lexical_score = lexical_only[0][1]
-        with patch("app.database.fetch_lexical_candidates", return_value=[(document, chunk.chunk_id, chunk.text, chunk.chunk_index)]), \
-             patch("app.embedding_service.embed_text", return_value=[0.1] * settings.embedding_dimensions), \
-             patch("app.database.search_rag_vectors", return_value=[(document, chunk.chunk_id, chunk.text, chunk.chunk_index, 0.9)]):
+        with patch("app.infra.database.fetch_lexical_candidates", return_value=[(document, chunk.chunk_id, chunk.text, chunk.chunk_index)]), \
+             patch("app.retrieval.embedding_service.embed_text", return_value=[0.1] * settings.embedding_dimensions), \
+             patch("app.infra.database.search_rag_vectors", return_value=[(document, chunk.chunk_id, chunk.text, chunk.chunk_index, 0.9)]):
             results = search_rag_db("임금체불 진정", category="labor")
         self.assertAlmostEqual(results[0][1], round((lexical_score + 0.9) / 2, 3))
 
     def test_ocr_and_chatbot_share_the_search_service(self) -> None:
         spy = MagicMock(return_value=[])
-        with patch("app.rag.search_rag_db", spy):
+        with patch("app.retrieval.rag.search_rag_db", spy):
             search_index("임금 문제")
         self.assertTrue(spy.called)
-        from app.document_explanation import analyze_document_risks
+        from app.documents.document_explanation import analyze_document_risks
         from documents.test_document_risks import DETAILED_RISKY_CONTRACT
         spy.reset_mock()
-        with patch("app.rag.search_rag_db", spy), patch("app.database.database_available", return_value=True):
+        with patch("app.retrieval.rag.search_rag_db", spy), patch("app.infra.database.database_available", return_value=True):
             analyze_document_risks(DETAILED_RISKY_CONTRACT, "employment_contract")
         self.assertTrue(spy.called)
 
     def test_repeated_query_hits_cache(self) -> None:
         fetch = MagicMock(side_effect=make_fake_fetch(DB_ROWS))
-        with patch("app.database.fetch_lexical_candidates", fetch):
+        with patch("app.infra.database.fetch_lexical_candidates", fetch):
             first = search_rag_db("숙소비 공제", category="labor")
             second = search_rag_db("숙소비 공제", category="labor")
         self.assertEqual(fetch.call_count, 1)

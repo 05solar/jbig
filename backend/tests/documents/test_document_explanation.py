@@ -3,8 +3,8 @@ import json
 import unittest
 from unittest.mock import patch
 
-from app.config import settings
-from app.document_explanation import explain_document, redact_document_text
+from app.core.config import settings
+from app.documents.document_explanation import explain_document, redact_document_text
 
 
 class FakeResponses:
@@ -35,7 +35,7 @@ class DocumentExplanationTests(unittest.TestCase):
         self.assertNotIn("test@example.com", text)
         self.assertNotIn("010-1234-5678", text)
 
-    @patch("app.document_explanation.acquire_ai_budget", return_value=True)
+    @patch("app.documents.document_explanation.acquire_ai_budget", return_value=True)
     def test_text_document_is_redacted_and_explained(self, _budget) -> None:
         result = explain_document("번호 900101-1234567 임금 지급 안내".encode(), "text/plain", "notice.txt", "ko", False, FakeClient)
         self.assertTrue(result.privacy_redacted)

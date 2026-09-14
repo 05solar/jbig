@@ -2,11 +2,11 @@
 import unittest
 from unittest.mock import patch
 
-from app.ai_consultation import generate_grounded_answer, generate_rag_answer, requires_status_caution
-from app.config import settings
+from app.chat.ai_consultation import generate_grounded_answer, generate_rag_answer, requires_status_caution
+from app.core.config import settings
 from app.main import register_rag_document_api, require_rag_admin
-from app.rag import OfficialChunk, content_hash, redact_for_embedding, register_document, search_index, search_official_documents, validate_official_url
-from app.schemas import ConsultationRequest, ConsultationResponse, RAGDocument, RAGDocumentCreate
+from app.retrieval.rag import OfficialChunk, content_hash, redact_for_embedding, register_document, search_index, search_official_documents, validate_official_url
+from app.core.schemas import ConsultationRequest, ConsultationResponse, RAGDocument, RAGDocumentCreate
 from fastapi import HTTPException
 
 
@@ -84,7 +84,7 @@ class RAGTests(unittest.TestCase):
         document, chunks = register_document(document_id="inactive", title="비활성 자료", publisher="고용노동부", category="labor", text="비활성 숙소비 공제 자료", source_url="https://www.moel.go.kr/", active=False)
         self.assertEqual(search_official_documents("숙소비 공제", chunks=chunks), [])
 
-    @patch("app.rag.save_rag_document", create=True)
+    @patch("app.retrieval.rag.save_rag_document", create=True)
     def test_duplicate_content_hash_is_stable(self, _save):
         _, _ = register_document(document_id="one", title="A", publisher="고용노동부", category="labor", text="같은 문서", source_url="https://www.moel.go.kr/")
         _, _ = register_document(document_id="two", title="B", publisher="고용노동부", category="labor", text="같은 문서", source_url="https://www.moel.go.kr/")
@@ -94,7 +94,7 @@ class RAGTests(unittest.TestCase):
         self.assertNotEqual(content_hash("문서 1"), content_hash("문서 2"))
 
     def test_cache_key_includes_context_and_index(self):
-        from app.operations import cache_key
+        from app.infra.operations import cache_key
         self.assertNotEqual(cache_key("질문", "ko", "student", "전주", "1"), cache_key("질문", "ko", "worker", "전주", "2"))
 
     def test_api_key_absent_still_returns_grounded_excerpt(self):
@@ -175,7 +175,7 @@ class RAGTests(unittest.TestCase):
 
     def test_guide_fallback_also_uses_status_caution(self):
         settings.openai_api_key = "test-key"
-        from app.consultation import consult
+        from app.chat.consultation import consult
         result = generate_grounded_answer(consult("불법체류 중인데 월급을 못 받았어요", "ko"), "불법체류 중인데 임금을 받을 수 있나요?", FakeRagClient)
         self.assertEqual(result.answer_mode, "guide_fallback")
         self.assertIn("판단할 수 없습니다", result.message)

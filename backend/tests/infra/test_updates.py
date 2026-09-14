@@ -2,9 +2,9 @@
 import unittest
 from unittest.mock import patch
 
-from app.config import settings
-from app.rag import content_hash, register_document, source_from_chunk, trust_for_document
-from app.updates import FetchResult, _normalize_html, check_source_updates, next_version, summarize_diff
+from app.core.config import settings
+from app.retrieval.rag import content_hash, register_document, source_from_chunk, trust_for_document
+from app.retrieval.updates import FetchResult, _normalize_html, check_source_updates, next_version, summarize_diff
 
 
 def target(text: str = "기존 공식 문서 내용") -> dict[str, str]:
@@ -20,8 +20,8 @@ class UpdateTests(unittest.TestCase):
         summary = summarize_diff("첫 번째 줄\n같은 줄", "첫 번째 줄\n바뀐 줄")
         self.assertIn("바뀐 줄", summary)
 
-    @patch("app.updates.record_rag_check")
-    @patch("app.updates.save_pending_rag_version")
+    @patch("app.retrieval.updates.record_rag_check")
+    @patch("app.retrieval.updates.save_pending_rag_version")
     def test_unchanged_source_only_updates_check_time(self, save_pending, record_check):
         old = target()
         result = check_source_updates(fetcher=lambda _: FetchResult(old["source_url"], "기존 공식 문서 내용", "text/html", "now"), targets=[old])
@@ -29,8 +29,8 @@ class UpdateTests(unittest.TestCase):
         save_pending.assert_not_called()
         record_check.assert_called_once()
 
-    @patch("app.updates.record_rag_check")
-    @patch("app.updates.save_pending_rag_version", return_value=True)
+    @patch("app.retrieval.updates.record_rag_check")
+    @patch("app.retrieval.updates.save_pending_rag_version", return_value=True)
     def test_changed_source_creates_pending_version(self, save_pending, record_check):
         old = target()
         result = check_source_updates(fetcher=lambda _: FetchResult(old["source_url"], "변경된 공식 문서 내용", "text/html", "now"), targets=[old])
@@ -40,14 +40,14 @@ class UpdateTests(unittest.TestCase):
         self.assertEqual(pending_document.version, "2")
         self.assertEqual(pending_document.previous_version_id, "doc:1:old")
 
-    @patch("app.updates.record_rag_check")
-    @patch("app.updates.save_pending_rag_version", return_value=False)
+    @patch("app.retrieval.updates.record_rag_check")
+    @patch("app.retrieval.updates.save_pending_rag_version", return_value=False)
     def test_repeated_changed_source_is_not_duplicated(self, save_pending, _record_check):
         old = target()
         result = check_source_updates(fetcher=lambda _: FetchResult(old["source_url"], "변경된 공식 문서 내용", "text/html", "now"), targets=[old])
         self.assertEqual(result["duplicates"], 1)
 
-    @patch("app.updates.record_rag_check")
+    @patch("app.retrieval.updates.record_rag_check")
     def test_fetch_failure_preserves_existing_document(self, record_check):
         old = target()
         def fail(_):

@@ -3,7 +3,7 @@ import unittest
 
 from fastapi import HTTPException
 
-from app.data import AGENCIES, GUIDES
+from app.data.seed import AGENCIES, GUIDES
 from app.main import get_agency, get_guide, list_guides
 
 

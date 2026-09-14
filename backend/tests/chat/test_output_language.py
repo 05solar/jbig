@@ -11,14 +11,14 @@ from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 
-from app.ai_consultation import generate_rag_answer, validate_output_language
-from app.config import settings
-from app.document_explanation import analyze_document_risks, explain_document
+from app.chat.ai_consultation import generate_rag_answer, validate_output_language
+from app.core.config import settings
+from app.documents.document_explanation import analyze_document_risks, explain_document
 from app.main import app
-from app.ocr import OCRResult
-from app.operations import reset_for_tests
-from app.rag import search_index
-from app.schemas import ConsultationResponse
+from app.documents.ocr import OCRResult
+from app.infra.operations import reset_for_tests
+from app.retrieval.rag import search_index
+from app.core.schemas import ConsultationResponse
 
 client = TestClient(app)
 
@@ -112,8 +112,8 @@ class ChatOutputLanguageTests(unittest.TestCase):
         assert_no_unexpected_korean(self, result.message, "post-retry fallback")
 
     def test_authority_insufficient_is_vietnamese_for_vi(self) -> None:
-        from app.rag import OfficialChunk
-        from app.schemas import RAGDocument
+        from app.retrieval.rag import OfficialChunk
+        from app.core.schemas import RAGDocument
         document = RAGDocument(document_id="live", title="운영 정보", publisher="알 수 없는 기관", category="labor", original_text="대기시간 안내", source_url="https://www.moel.go.kr/", language="ko", collected_at="2026-09-13", verified_at="2026-09-13", version="1", content_hash="hash", document_type="live", status="active")
         result = generate_rag_answer(empty_result("vi"), "thời gian chờ", [(OfficialChunk(document, "live:0", document.original_text, 0), 0.9)])
         self.assertEqual(result.answer_mode, "insufficient_evidence")
@@ -166,7 +166,7 @@ class OcrOutputLanguageTests(unittest.TestCase):
         settings.openai_api_key = self.original_key
         settings.rag_use_sample_documents_for_tests = self.original_flag
 
-    @patch("app.document_explanation.recognize_image_bytes", return_value=OCRResult("", 0.0))
+    @patch("app.documents.document_explanation.recognize_image_bytes", return_value=OCRResult("", 0.0))
     def test_low_confidence_notice_is_vietnamese(self, _ocr) -> None:
         result = explain_document(b"png", "image/png", "scan.png", "vi", False)
         self.assertIn("Không thể đọc", result.summary)
@@ -175,7 +175,7 @@ class OcrOutputLanguageTests(unittest.TestCase):
 
     def test_db_outage_notice_is_english(self) -> None:
         settings.rag_use_sample_documents_for_tests = False
-        with patch("app.database.database_available", return_value=False):
+        with patch("app.infra.database.database_available", return_value=False):
             items = analyze_document_risks("근로계약서 임금: 시급 9,500원 삭감할 수 있다", "employment_contract", "en")
         outage = next(item for item in items if "Reduction" in item.title or "Wage" in item.title)
         self.assertIn("temporarily unavailable", outage.problem)

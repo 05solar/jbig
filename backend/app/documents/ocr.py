@@ -14,7 +14,7 @@ import os
 import threading
 from dataclasses import dataclass
 
-from .config import settings
+from ..core.config import settings
 
 # Paddle's native inference runtime cannot read model files from paths with
 # non-ASCII characters (e.g. a Korean Windows user name). Relocate the model

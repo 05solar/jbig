@@ -8,9 +8,9 @@ import json
 import unittest
 from pathlib import Path
 
-from app.config import settings
-from app.consultation import find_guides
-from app.rag import search_index
+from app.core.config import settings
+from app.chat.consultation import find_guides
+from app.retrieval.rag import search_index
 
 FIXTURE_PATH = Path(__file__).parent.parent / "fixtures" / "rag_cases.json"
 

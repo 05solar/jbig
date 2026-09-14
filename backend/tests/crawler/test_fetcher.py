@@ -3,7 +3,7 @@
 import unittest
 import urllib.error
 
-from app.config import settings
+from app.core.config import settings
 from app.crawler.fetcher import Fetcher, SkippedURL
 
 

@@ -16,8 +16,8 @@ import re
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 
-from ..config import settings
-from ..rag import content_hash, is_specific_source_url, register_document
+from ..core.config import settings
+from ..retrieval.rag import content_hash, is_specific_source_url, register_document
 from .base import CrawlCandidate, CrawlReport, SourceSpec
 from .dedup import DedupRegistry, canonical_url
 from .fetcher import Fetcher, SkippedURL
@@ -130,8 +130,8 @@ def build_candidate(spec: SourceSpec, url: str, fetcher: Fetcher, report: CrawlR
 
 def register_candidates(candidates: list[CrawlCandidate], report: CrawlReport) -> None:
     """Persist candidates as review_pending only (never active). §14/§15."""
-    from ..database import get_rag_document_summary, record_rag_check, save_crawled_document_pending, save_pending_rag_version
-    from ..updates import next_version
+    from ..infra.database import get_rag_document_summary, record_rag_check, save_crawled_document_pending, save_pending_rag_version
+    from ..retrieval.updates import next_version
 
     for candidate in candidates:
         spec = candidate.spec

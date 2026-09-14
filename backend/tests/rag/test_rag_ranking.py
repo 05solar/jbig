@@ -8,10 +8,10 @@ from unittest.mock import patch
 
 from fakes import FailingLLMClient, FakeLLMClient, FakeLLMResponses, fake_create_embeddings
 
-from app.ai_consultation import generate_rag_answer, rewrite_search_query
-from app.config import settings
-from app.rag import OfficialChunk, _ranking_score, freshness_for_document, merge_scores, register_document, search_index, select_evidence
-from app.schemas import ConsultationResponse, RAGDocument
+from app.chat.ai_consultation import generate_rag_answer, rewrite_search_query
+from app.core.config import settings
+from app.retrieval.rag import OfficialChunk, _ranking_score, freshness_for_document, merge_scores, register_document, search_index, select_evidence
+from app.core.schemas import ConsultationResponse, RAGDocument
 
 
 def empty_result(language: str = "ko") -> ConsultationResponse:
@@ -57,9 +57,9 @@ class MergeAndRankingTests(unittest.TestCase):
         original_key = settings.openai_api_key
         settings.openai_api_key = "test-key"
         try:
-            with patch("app.rag.search_official_documents", return_value=[(chunk, 0.5)]), \
-                 patch("app.embeddings.create_embeddings", side_effect=fake_create_embeddings), \
-                 patch("app.database.search_rag_vectors", return_value=[(document, chunk.chunk_id, chunk.text, 0, 0.9)]):
+            with patch("app.retrieval.rag.search_official_documents", return_value=[(chunk, 0.5)]), \
+                 patch("app.retrieval.embeddings.create_embeddings", side_effect=fake_create_embeddings), \
+                 patch("app.infra.database.search_rag_vectors", return_value=[(document, chunk.chunk_id, chunk.text, 0, 0.9)]):
                 results = search_index("임금")
             self.assertEqual(len(results), 1)
             self.assertAlmostEqual(results[0][1], 0.7)
@@ -145,7 +145,7 @@ class QueryRewriteTests(unittest.TestCase):
         settings.rag_query_rewrite_enabled = False
         self.assertIsNone(rewrite_search_query("월급 안 줘요", FakeLLMClient))
 
-    @patch("app.ai_consultation.acquire_ai_budget", return_value=True)
+    @patch("app.chat.ai_consultation.acquire_ai_budget", return_value=True)
     def test_enabled_rewrite_uses_fake_client_and_redacts(self, _budget):
         settings.openai_api_key = "test-key"
         settings.rag_query_rewrite_enabled = True
@@ -160,7 +160,7 @@ class QueryRewriteTests(unittest.TestCase):
         finally:
             FakeLLMResponses.output_text = original_output
 
-    @patch("app.ai_consultation.acquire_ai_budget", return_value=True)
+    @patch("app.chat.ai_consultation.acquire_ai_budget", return_value=True)
     def test_rewrite_failure_returns_none(self, _budget):
         settings.openai_api_key = "test-key"
         settings.rag_query_rewrite_enabled = True

@@ -12,11 +12,11 @@ from fastapi.testclient import TestClient
 
 from fakes import FailingLLMClient, FakeLLMClient
 
-from app.config import settings
+from app.core.config import settings
 from app.main import app
-from app.operations import reset_for_tests
-from app.rag import OfficialChunk
-from app.schemas import RAGDocument
+from app.infra.operations import reset_for_tests
+from app.retrieval.rag import OfficialChunk
+from app.core.schemas import RAGDocument
 
 client = TestClient(app)
 
@@ -82,7 +82,7 @@ class ConsultationEndToEndTests(unittest.TestCase):
 
     def test_daily_ai_budget_exhaustion_refuses_instead_of_guessing(self) -> None:
         settings.openai_api_key = "test-key"
-        with patch("openai.OpenAI", FakeLLMClient), patch("app.ai_consultation.acquire_ai_budget", return_value=False):
+        with patch("openai.OpenAI", FakeLLMClient), patch("app.chat.ai_consultation.acquire_ai_budget", return_value=False):
             body = self.post("숙소비를 월급에서 공제했어요")
         self.assertEqual(body["answer_mode"], "insufficient_evidence")
         self.assertTrue(body["sources"])

@@ -7,23 +7,23 @@ from secrets import compare_digest
 from fastapi import FastAPI, File, Form, Header, HTTPException, Query, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 
-from .config import settings
-from .ai_consultation import generate_grounded_answer, generate_rag_answer, rewrite_search_query, select_guide_semantically
-from .consultation import build_consultation, consult
-from .data import AGENCIES, GUIDES
-from .database import approve_rag_version, database_available, get_rag_document_summary, initialize_database, list_pending_rag_versions, load_agencies, load_guides, rag_document_status, rag_index_version, reject_rag_version, save_consultation, save_pending_rag_version
-from .embeddings import search_guides_semantically
-from .document_explanation import explain_document
-from .rag import content_hash, index_approved_document, index_documents, register_document, search_index, source_from_chunk
-from .operations import allow_request, cache_key, get_cached, hash_identifier, record_feedback, set_cached, status
-from .regions import resolve_region
-from .schemas import Agency, Category, ConsultationRequest, ConsultationResponse, DocumentExplanation, FeedbackRequest, FeedbackResponse, Guide, HealthResponse, Language, OperationsStatus, RAGDocumentAdminResponse, RAGDocumentCreate, RegionInfo
+from .core.config import settings
+from .chat.ai_consultation import generate_grounded_answer, generate_rag_answer, rewrite_search_query, select_guide_semantically
+from .chat.consultation import build_consultation, consult
+from .data.seed import AGENCIES, GUIDES
+from .infra.database import approve_rag_version, database_available, get_rag_document_summary, initialize_database, list_pending_rag_versions, load_agencies, load_guides, rag_document_status, rag_index_version, reject_rag_version, save_consultation, save_pending_rag_version
+from .retrieval.embeddings import search_guides_semantically
+from .documents.document_explanation import explain_document
+from .retrieval.rag import content_hash, index_approved_document, index_documents, register_document, search_index, source_from_chunk
+from .infra.operations import allow_request, cache_key, get_cached, hash_identifier, record_feedback, set_cached, status
+from .data.regions import resolve_region
+from .core.schemas import Agency, Category, ConsultationRequest, ConsultationResponse, DocumentExplanation, FeedbackRequest, FeedbackResponse, Guide, HealthResponse, Language, OperationsStatus, RAGDocumentAdminResponse, RAGDocumentCreate, RegionInfo
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     initialize_database()
     if settings.rag_embedding_warmup:
-        from . import embedding_service
+        from .retrieval import embedding_service
         embedding_service.warmup()
     yield
 

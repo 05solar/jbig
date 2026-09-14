@@ -6,11 +6,11 @@ import re
 from collections.abc import Callable
 from typing import Any
 
-from .config import settings
-from .data import GUIDES
-from .database import database_available, embedding_hashes, save_guide_embedding, search_guide_vectors
-from .operations import acquire_ai_budget, record_ai_fallback
-from .schemas import Guide
+from ..core.config import settings
+from ..data.seed import GUIDES
+from ..infra.database import database_available, embedding_hashes, save_guide_embedding, search_guide_vectors
+from ..infra.operations import acquire_ai_budget, record_ai_fallback
+from ..core.schemas import Guide
 
 logger = logging.getLogger(__name__)
 

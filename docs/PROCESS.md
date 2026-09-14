@@ -67,7 +67,7 @@ flowchart TD
     C -- 통과 --> D[청크 분할 900자<br/>+ 임베딩 생성 · 키 있을 때]
     D --> E[active 상태로 색인<br/>rag_documents + rag_chunks]
 
-    E --> F[주기 점검 cron<br/>python -m app.cli check-source-updates<br/>법령 24h · 공지 6h · 안내 7일]
+    E --> F[주기 점검 cron<br/>python -m app.scripts.cli check-source-updates<br/>법령 24h · 공지 6h · 안내 7일]
     F --> G{원문 fetch 성공?}
     G -- 실패 --> G1[fetch_failed 상태<br/>문서는 계속 검색됨<br/>출처에 '최신성 재확인 필요' 표시]
     G -- 성공 --> H{content_hash 변경?}
@@ -145,17 +145,17 @@ npm run dev                                      # http://localhost:3000
 
 # DB (선택)
 docker compose up -d db                          # pgvector:pg16
-python -m app.db_init                            # 스키마 생성 + 시드
-python -m app.index_rag                          # 샘플 RAG 문서 색인
-python -m app.embed_guides                       # 가이드 임베딩 (OpenAI 키 필요)
+python -m app.scripts.db_init                            # 스키마 생성 + 시드
+python -m app.scripts.index_rag                          # 샘플 RAG 문서 색인
+python -m app.scripts.embed_guides                       # 가이드 임베딩 (OpenAI 키 필요)
 
 # 테스트
 cd backend && python -m unittest discover -s tests -v   # 66개 테스트
 cd frontend && ./node_modules/.bin/tsc --noEmit && npm run build
 
 # RAG 운영 (cron 권장)
-python -m app.cli check-source-updates
-python -m app.cli list-pending-updates
-python -m app.cli approve-document-version <version-id> --reviewed-by admin --note "검토 완료"
-python -m app.cli reject-document-version <version-id> --reviewed-by admin --note "사유"
+python -m app.scripts.cli check-source-updates
+python -m app.scripts.cli list-pending-updates
+python -m app.scripts.cli approve-document-version <version-id> --reviewed-by admin --note "검토 완료"
+python -m app.scripts.cli reject-document-version <version-id> --reviewed-by admin --note "사유"
 ```

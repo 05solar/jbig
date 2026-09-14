@@ -2,6 +2,12 @@
 
 작업(명령) 수행 시마다 이 파일에 간략한 내역을 추가합니다. 규칙은 [agent.md](./agent.md) 참조. 최신 항목이 위.
 
+## 2026-09-14 — backend/app 기능별 패키지 재구성
+- 평면 구조였던 backend/app 21개 모듈을 7개 기능 패키지로 분리: core(설정·스키마), data(시드·지역, data.py→seed.py), chat(규칙·LLM 상담), documents(OCR·위험 검토), retrieval(RAG·임베딩·출처 표시·원문 갱신), infra(DB·운영), scripts(운영 CLI 6종). main.py는 uvicorn 진입점(`app.main:app`)이라 루트 유지, crawler/는 기존 유지
+- 각 패키지에 역할 설명 README.md·한국어 주석 __init__.py 추가, app/README.md를 구조 인덱스로 개편
+- app 내부 상대 import·tests 절대 import·문서(README/docs)의 `python -m app.*` 실행 경로 60개 파일 일괄 수정 (CLI는 `python -m app.scripts.<이름>`으로 변경)
+- 검증: hermetic 전체 245개 통과(skip 8), Hit@1/3/5=1.0·MRR=1.0 — 재구성 전 기준선과 동일
+
 ## 2026-09-13 — 공식문서 크롤러 도입·RAG 코퍼스 1차 확장 (25→59건)
 - app/crawler/ 신설(7모듈): 허용 도메인 전용 fetcher(robots·1초 간격·백오프), HTML/PDF 파서(EUC-KR 감지·메뉴 제거), 관련성/품질 필터, URL·해시 중복제거, 사이트별 SourceSpec, review_pending 등록 파이프라인 + CLI `crawl_official_docs`(--dry-run/--review/--approved-only-index)
 - 승인 워크플로 보강: save_pending_rag_version 컬럼 누락 버그 수정, 신규 크롤 문서용 save_crawled_document_pending, 승인 시 자동 로컬 임베딩+search_tokens(index_approved_document), 검수 큐 상세화(품질점수 정렬)

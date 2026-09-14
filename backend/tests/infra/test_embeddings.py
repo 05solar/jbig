@@ -2,9 +2,9 @@
 import unittest
 from unittest.mock import patch
 
-from app.config import settings
-from app.data import GUIDES
-from app.embeddings import guide_embedding_text, index_guides, search_guides_semantically
+from app.core.config import settings
+from app.data.seed import GUIDES
+from app.retrieval.embeddings import guide_embedding_text, index_guides, search_guides_semantically
 
 
 class FakeEmbeddings:
@@ -39,7 +39,7 @@ class EmbeddingTests(unittest.TestCase):
         self.assertIn(GUIDES[0].summary["ko"], text)
         self.assertLess(len(text), 400)
 
-    @patch("app.embeddings.acquire_ai_budget", return_value=True)
+    @patch("app.retrieval.embeddings.acquire_ai_budget", return_value=True)
     def test_semantic_search_redacts_and_returns_database_matches(self, _budget) -> None:
         captured = {}
         def searcher(vector, limit, threshold):
@@ -51,10 +51,10 @@ class EmbeddingTests(unittest.TestCase):
         self.assertEqual(captured["limit"], 3)
         self.assertEqual(captured["threshold"], settings.vector_similarity_threshold)
 
-    @patch("app.embeddings.acquire_ai_budget", return_value=True)
-    @patch("app.embeddings.save_guide_embedding", return_value=True)
-    @patch("app.embeddings.embedding_hashes", return_value={})
-    @patch("app.embeddings.database_available", return_value=True)
+    @patch("app.retrieval.embeddings.acquire_ai_budget", return_value=True)
+    @patch("app.retrieval.embeddings.save_guide_embedding", return_value=True)
+    @patch("app.retrieval.embeddings.embedding_hashes", return_value={})
+    @patch("app.retrieval.embeddings.database_available", return_value=True)
     def test_indexer_batches_and_saves_all_changed_guides(self, _available, _hashes, _save, _budget) -> None:
         indexed, failed = index_guides(FakeClient)
         self.assertEqual(indexed, len(GUIDES))

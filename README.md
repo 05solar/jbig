@@ -57,7 +57,7 @@ PostgreSQL/pgvector를 사용해 검토된 문서와 임베딩을 저장하세�
 
 ## 4. 공식 문서 RAG 색인
 
-RAG는 상담 요청마다 웹을 크롤링하지 않습니다. `backend/app/rag.py`에 등록·검토된
+RAG는 상담 요청마다 웹을 크롤링하지 않습니다. `backend/app/retrieval/rag.py`에 등록·검토된
 공식 문서만 색인하며, URL은 `.env`의 `RAG_ALLOWED_DOMAINS` 허용목록에 있어야 합니다.
 현재는 PDF/HWP 자동 수집 대신 정제된 텍스트와 메타데이터를 등록하는 인터페이스와
 개발용 샘플 문서를 제공합니다.
@@ -65,20 +65,20 @@ RAG는 상담 요청마다 웹을 크롤링하지 않습니다. `backend/app/rag
 ```bash
 cd backend
 source .venv/bin/activate
-python -m app.index_rag
+python -m app.scripts.index_rag
 ```
 
 검토자가 정제한 텍스트 파일을 공식 URL과 함께 등록할 수도 있습니다(명령은 URL을
 가져오지 않습니다).
 
 ```bash
-python -m app.register_rag_document \
+python -m app.scripts.register_rag_document \
   --id moel-example --title "공식 문서 제목" --publisher "고용노동부" \
   --category labor --url https://www.moel.go.kr/ --text-file ./reviewed.txt
 ```
 
 `initialize_database()`가 기존 테이블을 보존하는 idempotent 마이그레이션을 수행합니다.
-새 환경에서는 `python -m app.db_init` 또는 서버 시작 시 `lifespan`에서
+새 환경에서는 `python -m app.scripts.db_init` 또는 서버 시작 시 `lifespan`에서
 `rag_documents`와 `rag_chunks(vector(...))`를 생성합니다. 운영 DB에서는 먼저 백업 후
 마이그레이션을 실행하세요.
 
@@ -118,10 +118,10 @@ curl -X POST http://localhost:8000/api/admin/rag/documents \
 
 ```bash
 cd backend
-python -m app.cli check-source-updates
-python -m app.cli list-pending-updates
-python -m app.cli approve-document-version <version-id> --reviewed-by admin --note "검토 완료"
-python -m app.cli reject-document-version <version-id> --reviewed-by admin --note "변경 근거 확인 필요"
+python -m app.scripts.cli check-source-updates
+python -m app.scripts.cli list-pending-updates
+python -m app.scripts.cli approve-document-version <version-id> --reviewed-by admin --note "검토 완료"
+python -m app.scripts.cli reject-document-version <version-id> --reviewed-by admin --note "변경 근거 확인 필요"
 ```
 
 변경이 없으면 마지막 확인 시각만 갱신합니다. 변경이 있으면 기존 활성 버전을
@@ -136,7 +136,7 @@ python -m app.cli reject-document-version <version-id> --reviewed-by admin --not
 다음처럼 실행합니다.
 
 ```cron
-0 * * * * cd /path/to/web/backend && .venv/bin/python -m app.cli check-source-updates
+0 * * * * cd /path/to/web/backend && .venv/bin/python -m app.scripts.cli check-source-updates
 ```
 
 접속 실패 시 기존 문서는 삭제하지 않고 `fetch_failed`와 실패 원인을 기록합니다.

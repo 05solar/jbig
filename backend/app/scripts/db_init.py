@@ -1,7 +1,7 @@
 # PostgreSQL 스키마 생성과 시드 데이터 적재 CLI를 제공하는 파일
 import sys
 
-from .database import initialize_database
+from ..infra.database import initialize_database
 
 
 if __name__ == "__main__":

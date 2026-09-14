@@ -15,8 +15,8 @@ from dataclasses import dataclass
 from datetime import date, datetime, timedelta, timezone
 from urllib.parse import urlparse
 
-from .config import settings
-from .schemas import Category, RAGDocument, RAGSource
+from ..core.config import settings
+from ..core.schemas import Category, RAGDocument, RAGSource
 
 logger = logging.getLogger(__name__)
 
@@ -241,7 +241,7 @@ def search_official_documents(question: str, *, category: Category | None = None
 
 def indexed_chunks() -> list[OfficialChunk]:
     try:
-        from .database import load_rag_chunks
+        from ..infra.database import load_rag_chunks
         stored = load_rag_chunks()
         if stored:
             return [OfficialChunk(document, chunk_id, text, index) for document, chunk_id, text, index in stored]
@@ -273,7 +273,7 @@ def _ranking_score(chunk: OfficialChunk, relevance: float) -> float:
 def _query_categories(question: str) -> set[str]:
     """Categories the question maps to via the deterministic guide keywords."""
     try:
-        from .consultation import find_guides
+        from ..chat.consultation import find_guides
         return {guide.category for guide in find_guides(question)}
     except Exception:
         return set()
@@ -326,7 +326,7 @@ def search_rag_db(question: str, *, category: Category | None = None, limit: int
     Returns None when the database is unreachable."""
     import time as _time
     from . import embedding_service
-    from .database import fetch_lexical_candidates, rag_index_version, search_rag_vectors
+    from ..infra.database import fetch_lexical_candidates, rag_index_version, search_rag_vectors
     top_k = limit or settings.rag_top_k
     # Index version in the key: approving or re-indexing a document bumps the
     # version (same source the consultation cache uses), invalidating old hits.
@@ -383,7 +383,7 @@ def search_index(question: str, *, category: Category | None = None, limit: int 
     if settings.openai_api_key:
         try:
             from .embeddings import create_embeddings
-            from .database import search_rag_vectors
+            from ..infra.database import search_rag_vectors
             vector_matches = search_rag_vectors(create_embeddings([normalize_text(question)])[0], limit or settings.rag_top_k, settings.rag_similarity_threshold)
             for document, chunk_id, text, index, score in vector_matches or []:
                 if category is not None and document.category != category:
@@ -480,7 +480,7 @@ def index_approved_document(document_id: str) -> dict[str, int]:
 
     Uses the shared local EmbeddingService only — never the OpenAI API here."""
     from . import embedding_service
-    from .database import embed_document_chunks
+    from ..infra.database import embed_document_chunks
 
     if embedding_service.signature() != "none":
         def embed(texts: list[str]) -> list[list[float] | None] | None:
@@ -498,7 +498,7 @@ def index_approved_document(document_id: str) -> dict[str, int]:
 
 def index_documents(*, documents: tuple[tuple[RAGDocument, list[OfficialChunk]], ...] = SAMPLE_DOCUMENTS, embedding_factory=None) -> tuple[int, int]:
     """Store reviewed documents. Embeddings are optional so development works without an API key."""
-    from .database import save_rag_document
+    from ..infra.database import save_rag_document
     indexed = 0
     skipped = 0
     if embedding_factory is None:

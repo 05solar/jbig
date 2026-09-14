@@ -5,12 +5,12 @@ Uses a synthetic crawled document with a crawl-test- prefix; rows are cleaned up
 in tearDown so repeated runs stay idempotent."""
 import unittest
 
-from app.config import settings
-from app.database import (approve_rag_version, connection, database_available, get_rag_document_summary,
+from app.core.config import settings
+from app.infra.database import (approve_rag_version, connection, database_available, get_rag_document_summary,
                           initialize_database, list_pending_rag_versions, rag_index_version, reject_rag_version,
                           save_crawled_document_pending)
-from app.rag import content_hash, index_approved_document, register_document, search_rag_db
-import app.rag as rag
+from app.retrieval.rag import content_hash, index_approved_document, register_document, search_rag_db
+import app.retrieval.rag as rag
 
 DB_READY = settings.database_enabled and database_available()
 
@@ -93,7 +93,7 @@ class RealDbCrawlWorkflowTests(unittest.TestCase):
         index_approved_document(DOC_ID)
         current = get_rag_document_summary(DOC_ID)
         # simulate a changed re-crawl -> new pending version
-        from app.database import save_pending_rag_version
+        from app.infra.database import save_pending_rag_version
         changed, chunks = register_document(
             document_id=DOC_ID, title="크롤러 워크플로 검증 문서", publisher="고용노동부", category="labor",
             text=BODY + " 개정된 조항이 추가되었습니다.", source_url="https://www.moel.go.kr/faq/faqView.do?seqRepeat=999999",

@@ -15,7 +15,7 @@ def fake_embedding(text: str, dimensions: int = 16) -> list[float]:
 
 
 def fake_create_embeddings(texts: list[str], client_factory=None) -> list[list[float]]:
-    """Drop-in replacement for app.embeddings.create_embeddings."""
+    """Drop-in replacement for app.retrieval.embeddings.create_embeddings."""
     return [fake_embedding(text) for text in texts]
 
 

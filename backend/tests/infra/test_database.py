@@ -1,8 +1,8 @@
 # DB 비활성 시 메모리 폴백 신호를 검증하는 테스트 파일
 import unittest
 
-from app.config import settings
-from app.database import database_available, load_agencies, load_guides
+from app.core.config import settings
+from app.infra.database import database_available, load_agencies, load_guides
 
 
 class DatabaseFallbackTests(unittest.TestCase):

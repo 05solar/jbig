@@ -5,7 +5,7 @@ Enable with: RAG_CRAWLER_REAL_TEST=1"""
 import os
 import unittest
 
-from app.config import settings
+from app.core.config import settings
 from app.crawler import sources_for
 from app.crawler.pipeline import run_crawl
 

@@ -1,5 +1,5 @@
 # 가이드 13종과 지원기관 5곳의 시드 데이터(3개 언어)를 정의하는 파일
-from .schemas import Agency, Guide
+from ..core.schemas import Agency, Guide
 
 
 AGENCIES = [
@@ -155,8 +155,8 @@ GUIDE_RELATED_DOCS = {
 
 
 def _enrich_guides() -> None:
-    from .rag import SAMPLE_DOCUMENTS
-    from .schemas import GuideReference
+    from ..retrieval.rag import SAMPLE_DOCUMENTS
+    from ..core.schemas import GuideReference
     documents = {document.document_id: document for document, _ in SAMPLE_DOCUMENTS}
     for index, guide in enumerate(GUIDES):
         references = [GuideReference(title=documents[doc_id].title, url=documents[doc_id].source_url, publisher=documents[doc_id].publisher) for doc_id in GUIDE_RELATED_DOCS.get(guide.id, []) if doc_id in documents]

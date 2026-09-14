@@ -1,9 +1,9 @@
 # 가이드 임베딩 생성/재생성(--reembed) CLI를 제공하는 파일
 import argparse
 
-from . import embedding_service
-from .database import initialize_database
-from .embeddings import index_guides
+from ..retrieval import embedding_service
+from ..infra.database import initialize_database
+from ..retrieval.embeddings import index_guides
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Embed guides through the shared embedding provider")

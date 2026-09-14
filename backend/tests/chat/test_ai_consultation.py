@@ -1,9 +1,9 @@
 # LLM 상담 경로(마스킹·폴백·의미 분류)를 mock으로 검증하는 테스트 파일
 import unittest
 
-from app.ai_consultation import generate_grounded_answer, redact_sensitive_data, select_guide_semantically
-from app.config import settings
-from app.consultation import consult
+from app.chat.ai_consultation import generate_grounded_answer, redact_sensitive_data, select_guide_semantically
+from app.core.config import settings
+from app.chat.consultation import consult
 
 
 class FakeResponses:

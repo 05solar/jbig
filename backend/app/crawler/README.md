@@ -2,7 +2,7 @@
 
 공식기관 사이트에서 체류·노동·행정 안내문서를 **목록→상세** 구조로만 수집하고, 정제·중복제거 후 **review_pending**으로 등록합니다. 크롤러는 절대 active 문서를 만들지 않으며, 임베딩·LLM 호출도 하지 않습니다. 관리자 승인 후에만 chunk+로컬 임베딩이 수행됩니다.
 
-실행: `python -m app.crawl_official_docs --dry-run` (자세한 옵션은 [docs/crawler.md](../../../docs/crawler.md))
+실행: `python -m app.scripts.crawl_official_docs --dry-run` (자세한 옵션은 [docs/crawler.md](../../../docs/crawler.md))
 
 | 파일 | 기능 |
 |------|------|

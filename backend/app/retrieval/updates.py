@@ -12,8 +12,8 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from html.parser import HTMLParser
 
-from .config import settings
-from .database import list_due_rag_documents, record_rag_check, save_pending_rag_version
+from ..core.config import settings
+from ..infra.database import list_due_rag_documents, record_rag_check, save_pending_rag_version
 from .rag import content_hash, register_document
 
 logger = logging.getLogger(__name__)

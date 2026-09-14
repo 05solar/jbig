@@ -7,17 +7,17 @@ Modes (§20):
   --approved-only-index  embed+tokenize chunks of already-approved documents
 
 Examples:
-  python -m app.crawl_official_docs --dry-run --domain moel.go.kr --limit 20
-  python -m app.crawl_official_docs --category labor --limit 30
-  python -m app.crawl_official_docs --approved-only-index
+  python -m app.scripts.crawl_official_docs --dry-run --domain moel.go.kr --limit 20
+  python -m app.scripts.crawl_official_docs --category labor --limit 30
+  python -m app.scripts.crawl_official_docs --approved-only-index
 """
 import argparse
 import json
 
-from .config import settings
-from .crawler import run_crawl, sources_for
-from .database import initialize_database, list_documents_needing_embedding
-from .rag import index_approved_document
+from ..core.config import settings
+from ..crawler import run_crawl, sources_for
+from ..infra.database import initialize_database, list_documents_needing_embedding
+from ..retrieval.rag import index_approved_document
 
 
 def main() -> None:
@@ -34,7 +34,7 @@ def main() -> None:
     if args.approved_only_index:
         if not initialize_database():
             raise SystemExit("PostgreSQL is unavailable")
-        from . import embedding_service
+        from ..retrieval import embedding_service
         pending = list_documents_needing_embedding(embedding_service.signature()) or []
         results = {document_id: index_approved_document(document_id) for document_id in pending}
         print(json.dumps({"documents": len(results), "results": results}, ensure_ascii=False, indent=2))

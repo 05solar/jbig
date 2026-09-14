@@ -2,12 +2,12 @@
 """Parser/filter/dedup unit tests. Fully offline."""
 import unittest
 
-from app.config import settings
+from app.core.config import settings
 from app.crawler.base import CrawlCandidate, SourceSpec
 from app.crawler.dedup import DedupRegistry, canonical_url, content_fingerprint
 from app.crawler.filters import is_allowed_detail_url, is_denied_url, is_irrelevant, quality_score
 from app.crawler.parser import detect_language, extract_published_at, parse_page
-from app.rag import is_specific_source_url
+from app.retrieval.rag import is_specific_source_url
 
 SPEC = SourceSpec(key="moel-faq", domain="www.moel.go.kr", publisher="고용노동부", category="labor", detail_patterns=(r"/faq/faqView\.do\?[^\"'\s]*seqRepeat=\d+",))
 

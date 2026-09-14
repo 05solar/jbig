@@ -6,7 +6,7 @@ external geocoding API, so consultations never trigger network calls.
 """
 from math import asin, cos, radians, sin, sqrt
 
-from .schemas import RegionInfo
+from ..core.schemas import RegionInfo
 
 # (region id, ko, en, vi, latitude, longitude) — approximate city/county centers.
 REGION_CENTERS = (

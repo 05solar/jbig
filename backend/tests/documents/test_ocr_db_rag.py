@@ -12,10 +12,10 @@ import json
 import unittest
 from unittest.mock import patch
 
-import app.rag as rag
-from app.config import settings
-from app.document_explanation import analyze_document_risks, explain_document
-from app.rag import SAMPLE_DOCUMENTS
+import app.retrieval.rag as rag
+from app.core.config import settings
+from app.documents.document_explanation import analyze_document_risks, explain_document
+from app.retrieval.rag import SAMPLE_DOCUMENTS
 
 from documents.test_document_risks import DETAILED_RISKY_CONTRACT
 
@@ -59,10 +59,10 @@ class DbEvidenceTests(unittest.TestCase):
         rag._search_cache.clear()
 
     def run_analysis(self, rows):
-        with patch("app.database.database_available", return_value=True), \
-             patch("app.database.fetch_lexical_candidates", side_effect=make_fake_fetch(rows)), \
-             patch("app.database.search_rag_vectors", return_value=None), \
-             patch("app.database.load_rag_chunks", side_effect=AssertionError("full corpus load must not happen during search")):
+        with patch("app.infra.database.database_available", return_value=True), \
+             patch("app.infra.database.fetch_lexical_candidates", side_effect=make_fake_fetch(rows)), \
+             patch("app.infra.database.search_rag_vectors", return_value=None), \
+             patch("app.infra.database.load_rag_chunks", side_effect=AssertionError("full corpus load must not happen during search")):
             return analyze_document_risks(DETAILED_RISKY_CONTRACT, "employment_contract")
 
     def test_risk_sources_come_from_database_rows(self) -> None:
@@ -88,7 +88,7 @@ class DbEvidenceTests(unittest.TestCase):
         self.assertNotIn("99,999", wage.official_standard)
 
     def test_db_outage_degrades_without_sample_fallback(self) -> None:
-        with patch("app.database.database_available", return_value=False):
+        with patch("app.infra.database.database_available", return_value=False):
             items = analyze_document_risks(DETAILED_RISKY_CONTRACT, "employment_contract")
         self.assertTrue(items)
         for item in items:
@@ -133,9 +133,9 @@ class DbEvidenceTests(unittest.TestCase):
         original_key = settings.openai_api_key
         settings.openai_api_key = "test-key"
         try:
-            with patch("app.database.database_available", return_value=True), \
-                 patch("app.database.fetch_lexical_candidates", side_effect=make_fake_fetch(DB_ROWS)), \
-                 patch("app.database.search_rag_vectors", return_value=None):
+            with patch("app.infra.database.database_available", return_value=True), \
+                 patch("app.infra.database.fetch_lexical_candidates", side_effect=make_fake_fetch(DB_ROWS)), \
+                 patch("app.infra.database.search_rag_vectors", return_value=None):
                 explain_document(DETAILED_RISKY_CONTRACT.encode(), "text/plain", "contract.txt", "ko", False, CapturingClient)
         finally:
             settings.openai_api_key = original_key
@@ -158,9 +158,9 @@ class DbEvidenceTests(unittest.TestCase):
         original_key = settings.openai_api_key
         settings.openai_api_key = "test-key"
         try:
-            with patch("app.database.database_available", return_value=True), \
-                 patch("app.database.fetch_lexical_candidates", side_effect=make_fake_fetch(DB_ROWS)), \
-                 patch("app.database.search_rag_vectors", return_value=None):
+            with patch("app.infra.database.database_available", return_value=True), \
+                 patch("app.infra.database.fetch_lexical_candidates", side_effect=make_fake_fetch(DB_ROWS)), \
+                 patch("app.infra.database.search_rag_vectors", return_value=None):
                 result = explain_document(DETAILED_RISKY_CONTRACT.encode(), "text/plain", "contract.txt", "ko", False, FakeUrlClient)
         finally:
             settings.openai_api_key = original_key
@@ -181,7 +181,7 @@ class RealDatabaseIntegrationTests(unittest.TestCase):
         cls.original_flag = settings.rag_use_sample_documents_for_tests
         settings.database_enabled = True
         settings.rag_use_sample_documents_for_tests = False
-        from app.database import database_available
+        from app.infra.database import database_available
         if not database_available():
             settings.database_enabled = cls.original_enabled
             raise unittest.SkipTest("PostgreSQL is not reachable")
@@ -208,8 +208,8 @@ class RealDatabaseIntegrationTests(unittest.TestCase):
         self.assertIn("moel-wage-cut-penalty-prohibition", sourced)
 
     def test_review_pending_rows_are_excluded_by_sql(self) -> None:
-        from app.database import connection
-        from app.rag import _tokens
+        from app.infra.database import connection
+        from app.retrieval.rag import _tokens
         tokens = list(_tokens("임시 검증 전용 문서 최저임금"))
         with connection() as conn, conn.cursor() as cursor:
             cursor.execute("INSERT INTO rag_documents (document_id,title,publisher,category,original_text,source_url,language,collected_at,verified_at,version,content_hash,active,status) VALUES ('pending-probe','임시 검증 전용 문서','고용노동부','labor','임시 검증 전용 본문','https://www.moel.go.kr/','ko',CURRENT_DATE,CURRENT_DATE,'1','probe-hash',false,'review_pending') ON CONFLICT (document_id) DO NOTHING")

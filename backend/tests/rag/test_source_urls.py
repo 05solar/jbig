@@ -8,9 +8,9 @@ homepages, no LLM-generated URLs.
 """
 import unittest
 
-from app.config import settings
-from app.document_explanation import analyze_document_risks
-from app.rag import SAMPLE_DOCUMENTS, is_specific_source_url, register_document, search_index, source_from_chunk
+from app.core.config import settings
+from app.documents.document_explanation import analyze_document_risks
+from app.retrieval.rag import SAMPLE_DOCUMENTS, is_specific_source_url, register_document, search_index, source_from_chunk
 
 from documents.test_document_risks import DETAILED_RISKY_CONTRACT
 

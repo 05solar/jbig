@@ -16,9 +16,9 @@ import urllib.robotparser
 from dataclasses import dataclass
 from urllib.parse import urlparse
 
-from ..config import settings
-from ..rag import validate_official_url
-from ..updates import RedirectLimit
+from ..core.config import settings
+from ..retrieval.rag import validate_official_url
+from ..retrieval.updates import RedirectLimit
 
 logger = logging.getLogger(__name__)
 

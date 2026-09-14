@@ -19,7 +19,7 @@ flowchart TD
     K --> L[LLM 요약: UPLOADED_DOCUMENT +\nOFFICIAL_EVIDENCE 블록 전달]
 ```
 
-## 1. OCR 단계 (`app/ocr.py`)
+## 1. OCR 단계 (`app/documents/ocr.py`)
 
 - PaddleOCR(PP-OCRv5 korean 모델, 로컬 실행 — 이미지가 서버 밖으로 나가지 않음)
 - 전처리: EXIF 회전 → grayscale/autocontrast → 크기 정규화

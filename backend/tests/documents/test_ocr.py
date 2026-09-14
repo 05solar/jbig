@@ -9,9 +9,9 @@ import io
 import unittest
 from unittest.mock import patch
 
-from app.config import settings
-from app.document_explanation import explain_document
-from app.ocr import OCRResult, ocr_available
+from app.core.config import settings
+from app.documents.document_explanation import explain_document
+from app.documents.ocr import OCRResult, ocr_available
 
 RISKY_CONTRACT_TEXT = (
     "근로계약서\n"
@@ -70,7 +70,7 @@ class MockedOCRPipelineTests(unittest.TestCase):
         settings.openai_api_key = self.original_key
         settings.rag_use_sample_documents_for_tests = self.original_flag
 
-    @patch("app.document_explanation.recognize_image_bytes", return_value=OCRResult(RISKY_CONTRACT_TEXT, 0.95))
+    @patch("app.documents.document_explanation.recognize_image_bytes", return_value=OCRResult(RISKY_CONTRACT_TEXT, 0.95))
     def test_confident_ocr_feeds_existing_risk_analysis(self, _ocr) -> None:
         result = explain_document(b"png-bytes", "image/png", "contract.png", "ko", False)
         self.assertTrue(result.ocr_used)
@@ -81,13 +81,13 @@ class MockedOCRPipelineTests(unittest.TestCase):
         self.assertTrue(warning.sources)
         self.assertTrue(result.original_text)
 
-    @patch("app.document_explanation.recognize_image_bytes", return_value=OCRResult("주민번호 900101-1234567 근로계약서 임금 월급", 0.9))
+    @patch("app.documents.document_explanation.recognize_image_bytes", return_value=OCRResult("주민번호 900101-1234567 근로계약서 임금 월급", 0.9))
     def test_ocr_text_is_redacted_before_analysis(self, _ocr) -> None:
         result = explain_document(b"png-bytes", "image/png", "contract.png", "ko", False)
         self.assertNotIn("900101-1234567", result.original_text)
         self.assertTrue(result.privacy_redacted)
 
-    @patch("app.document_explanation.recognize_image_bytes", return_value=OCRResult("흐릿한 글자", 0.31))
+    @patch("app.documents.document_explanation.recognize_image_bytes", return_value=OCRResult("흐릿한 글자", 0.31))
     def test_low_confidence_refuses_analysis_and_asks_for_retake(self, _ocr) -> None:
         result = explain_document(b"png-bytes", "image/png", "blurry.png", "ko", False)
         self.assertTrue(result.ocr_used)
@@ -96,20 +96,20 @@ class MockedOCRPipelineTests(unittest.TestCase):
         self.assertIn("정확하게 읽지 못했습니다", result.summary)
         self.assertTrue(any("촬영" in action for action in result.actions))
 
-    @patch("app.document_explanation.recognize_image_bytes", return_value=OCRResult("", 0.0))
+    @patch("app.documents.document_explanation.recognize_image_bytes", return_value=OCRResult("", 0.0))
     def test_empty_ocr_result_refuses_analysis(self, _ocr) -> None:
         result = explain_document(b"png-bytes", "image/png", "blank.png", "ko", False)
         self.assertTrue(result.ocr_used)
         self.assertIn("정확하게 읽지 못했습니다", result.summary)
 
-    @patch("app.document_explanation.recognize_pdf_bytes", return_value=OCRResult(NORMAL_CONTRACT_TEXT, 0.92))
+    @patch("app.documents.document_explanation.recognize_pdf_bytes", return_value=OCRResult(NORMAL_CONTRACT_TEXT, 0.92))
     def test_scanned_pdf_uses_ocr_when_pypdf_finds_no_text(self, _ocr) -> None:
         result = explain_document(b"%PDF-fake-scan", "application/pdf", "scan.pdf", "ko", False)
         self.assertTrue(result.ocr_used)
         self.assertEqual(result.document_type, "employment_contract")
         self.assertNotIn("WARNING", {item.level for item in result.risk_items})
 
-    @patch("app.document_explanation.recognize_image_bytes", return_value=None)
+    @patch("app.documents.document_explanation.recognize_image_bytes", return_value=None)
     def test_engine_unavailable_keeps_legacy_consent_path(self, _ocr) -> None:
         with self.assertRaises(PermissionError):
             explain_document(b"png-bytes", "image/png", "contract.png", "ko", False)

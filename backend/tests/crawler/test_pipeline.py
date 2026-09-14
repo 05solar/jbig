@@ -3,7 +3,7 @@
 import unittest
 from unittest.mock import MagicMock, patch
 
-from app.config import settings
+from app.core.config import settings
 from app.crawler.base import SourceSpec
 from app.crawler.fetcher import Fetcher
 from app.crawler.pipeline import document_id_for, run_crawl
@@ -81,9 +81,9 @@ class PipelineTests(unittest.TestCase):
         self.assertEqual(report.accepted_candidates, 1)
 
     def test_dry_run_writes_nothing(self) -> None:
-        with patch("app.database.save_crawled_document_pending") as save_new, \
-             patch("app.database.save_pending_rag_version") as save_pending, \
-             patch("app.database.save_rag_document") as save_active:
+        with patch("app.infra.database.save_crawled_document_pending") as save_new, \
+             patch("app.infra.database.save_pending_rag_version") as save_pending, \
+             patch("app.infra.database.save_rag_document") as save_active:
             self.run_dry()
         save_new.assert_not_called()
         save_pending.assert_not_called()
@@ -95,10 +95,10 @@ class PipelineTests(unittest.TestCase):
 
     def test_new_document_is_registered_as_review_pending_never_active(self) -> None:
         save_new = MagicMock(return_value=True)
-        with patch("app.database.get_rag_document_summary", return_value=None), \
-             patch("app.database.save_crawled_document_pending", save_new), \
-             patch("app.database.save_rag_document") as save_active, \
-             patch("app.rag.index_documents") as indexer:
+        with patch("app.infra.database.get_rag_document_summary", return_value=None), \
+             patch("app.infra.database.save_crawled_document_pending", save_new), \
+             patch("app.infra.database.save_rag_document") as save_active, \
+             patch("app.retrieval.rag.index_documents") as indexer:
             fetcher = Fetcher(transport=make_transport(build_pages()))
             report, _ = run_crawl((SPEC,), dry_run=False, fetcher=fetcher)
         self.assertEqual(report.new_documents, 1)
@@ -112,9 +112,9 @@ class PipelineTests(unittest.TestCase):
     def test_changed_document_becomes_pending_version(self) -> None:
         current = {"content_hash": "old-hash", "version": "1", "version_id": "doc:1:abc", "status": "active"}
         save_pending = MagicMock(return_value=True)
-        with patch("app.database.get_rag_document_summary", return_value=current), \
-             patch("app.database.save_pending_rag_version", save_pending), \
-             patch("app.database.save_rag_document") as save_active:
+        with patch("app.infra.database.get_rag_document_summary", return_value=current), \
+             patch("app.infra.database.save_pending_rag_version", save_pending), \
+             patch("app.infra.database.save_rag_document") as save_active:
             fetcher = Fetcher(transport=make_transport(build_pages()))
             report, _ = run_crawl((SPEC,), dry_run=False, fetcher=fetcher)
         self.assertEqual(report.updated_documents, 1)
@@ -133,13 +133,13 @@ class PipelineTests(unittest.TestCase):
             return True
 
         # First run learns the content hash the pipeline produces for this page.
-        with patch("app.database.get_rag_document_summary", return_value=None), \
-             patch("app.database.save_crawled_document_pending", side_effect=capture_hash):
+        with patch("app.infra.database.get_rag_document_summary", return_value=None), \
+             patch("app.infra.database.save_crawled_document_pending", side_effect=capture_hash):
             run_crawl((SPEC,), dry_run=False, fetcher=Fetcher(transport=make_transport(build_pages())))
         # Second run sees the same hash -> only checked_at is refreshed (§14).
-        with patch("app.database.get_rag_document_summary", return_value={"content_hash": captured["hash"], "version": "1", "version_id": "v1", "status": "active"}), \
-             patch("app.database.record_rag_check", record), \
-             patch("app.database.save_pending_rag_version") as save_pending:
+        with patch("app.infra.database.get_rag_document_summary", return_value={"content_hash": captured["hash"], "version": "1", "version_id": "v1", "status": "active"}), \
+             patch("app.infra.database.record_rag_check", record), \
+             patch("app.infra.database.save_pending_rag_version") as save_pending:
             report, _ = run_crawl((SPEC,), dry_run=False, fetcher=Fetcher(transport=make_transport(build_pages())))
         self.assertEqual(report.unchanged_documents, 1)
         record.assert_called_once()
@@ -156,12 +156,12 @@ class PipelineTests(unittest.TestCase):
 
 class ApprovalEmbeddingTests(unittest.TestCase):
     def test_index_approved_document_embeds_and_invalidates_cache(self) -> None:
-        import app.rag as rag
+        import app.retrieval.rag as rag
         rag._search_cache["stale"] = "entry"
         embed_chunks = MagicMock(return_value={"chunks": 2, "embedded": 2, "failed": 0})
-        with patch("app.database.embed_document_chunks", embed_chunks), \
-             patch("app.embedding_service.signature", return_value="local:test-model"), \
-             patch("app.embedding_service.embed_texts", return_value=[[0.1], [0.2]]):
+        with patch("app.infra.database.embed_document_chunks", embed_chunks), \
+             patch("app.retrieval.embedding_service.signature", return_value="local:test-model"), \
+             patch("app.retrieval.embedding_service.embed_texts", return_value=[[0.1], [0.2]]):
             summary = rag.index_approved_document("crawl-doc-1")
         self.assertEqual(summary["embedded"], 2)
         embed_chunks.assert_called_once()
@@ -170,7 +170,7 @@ class ApprovalEmbeddingTests(unittest.TestCase):
         self.assertEqual(rag._search_cache, {})
 
     def test_table_chunks_are_not_embedded(self) -> None:
-        from app.rag import is_low_semantic_chunk
+        from app.retrieval.rag import is_low_semantic_chunk
         table = "\n".join(["전주시가족센터", "063-243-0333", "전주", "완주군가족센터", "063-231-1037", "완주", "진안군가족센터", "063-433-4888", "진안", "장수군가족센터", "063-352-3362", "장수"])
         prose = ("질의\n부당해고 구제절차\n답변\n" + "근로기준법 제23조에 따라 사용자는 정당한 이유 없이 근로자를 해고하지 못하며, "
                  "부당하게 해고된 근로자는 노동위원회에 구제신청을 할 수 있습니다. " * 4)
@@ -178,7 +178,7 @@ class ApprovalEmbeddingTests(unittest.TestCase):
         self.assertFalse(is_low_semantic_chunk(prose))
 
     def test_none_provider_still_fills_search_tokens(self) -> None:
-        import app.rag as rag
+        import app.retrieval.rag as rag
         captured = {}
 
         def fake_embed_chunks(document_id, embed, tokenizer, signature):
@@ -186,7 +186,7 @@ class ApprovalEmbeddingTests(unittest.TestCase):
             captured["signature"] = signature
             return {"chunks": 1, "embedded": 0, "failed": 1}
 
-        with patch("app.database.embed_document_chunks", side_effect=fake_embed_chunks):
+        with patch("app.infra.database.embed_document_chunks", side_effect=fake_embed_chunks):
             original = settings.rag_embedding_provider
             settings.rag_embedding_provider = "none"
             try:

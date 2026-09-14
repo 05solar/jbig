@@ -6,9 +6,9 @@ from contextlib import contextmanager
 from datetime import date
 from typing import Iterator
 
-from .config import settings
-from .data import AGENCIES, GUIDES
-from .schemas import Agency, Category, ConsultationResponse, FeedbackRequest, Guide, OperationsStatus, RAGDocument
+from ..core.config import settings
+from ..data.seed import AGENCIES, GUIDES
+from ..core.schemas import Agency, Category, ConsultationResponse, FeedbackRequest, Guide, OperationsStatus, RAGDocument
 
 logger = logging.getLogger(__name__)
 _unavailable_until = 0.0
@@ -159,8 +159,8 @@ def save_rag_document(document: RAGDocument, chunks: list[tuple[str, int, str, s
             cursor.execute("""INSERT INTO rag_documents (document_id,title,publisher,category,original_text,source_url,language,issued_at,collected_at,verified_at,version,content_hash,active,version_id,source_organization,source_domain,document_type,published_at,promulgated_at,effective_from,effective_until,retrieved_at,last_checked_at,next_check_at,index_version,status,previous_version_id) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) ON CONFLICT (document_id) DO UPDATE SET title=EXCLUDED.title,publisher=EXCLUDED.publisher,category=EXCLUDED.category,original_text=EXCLUDED.original_text,source_url=EXCLUDED.source_url,language=EXCLUDED.language,issued_at=EXCLUDED.issued_at,collected_at=EXCLUDED.collected_at,verified_at=EXCLUDED.verified_at,version=EXCLUDED.version,content_hash=EXCLUDED.content_hash,active=EXCLUDED.active,version_id=EXCLUDED.version_id,source_organization=EXCLUDED.source_organization,source_domain=EXCLUDED.source_domain,document_type=EXCLUDED.document_type,published_at=EXCLUDED.published_at,promulgated_at=EXCLUDED.promulgated_at,effective_from=EXCLUDED.effective_from,effective_until=EXCLUDED.effective_until,retrieved_at=EXCLUDED.retrieved_at,last_checked_at=EXCLUDED.last_checked_at,next_check_at=EXCLUDED.next_check_at,index_version=EXCLUDED.index_version,status=EXCLUDED.status,previous_version_id=EXCLUDED.previous_version_id,updated_at=now()""", (document.document_id, document.title, document.publisher, document.category, document.original_text, document.source_url, document.language, document.issued_at, document.collected_at, document.verified_at, document.version, document.content_hash, document.active, document.version_id, document.source_organization, document.source_domain, document.document_type, document.published_at, document.promulgated_at, document.effective_from, document.effective_until, document.retrieved_at, document.last_checked_at, document.next_check_at, document.index_version, document.status, document.previous_version_id))
             cursor.execute("INSERT INTO rag_document_versions (version_id,document_id,data,content_hash,status,previous_version_id) VALUES (%s,%s,%s::jsonb,%s,%s,%s) ON CONFLICT (version_id) DO NOTHING", (document.version_id or f"{document.document_id}:{document.version}:{document.content_hash[:12]}", document.document_id, document.model_dump_json(), document.content_hash, "active" if document.active else "inactive", document.previous_version_id))
             cursor.execute("DELETE FROM rag_chunks WHERE document_id=%s", (document.document_id,))
-            from .rag import _tokens as rag_tokens
-            from .embedding_service import signature as embedding_signature
+            from ..retrieval.rag import _tokens as rag_tokens
+            from ..retrieval.embedding_service import signature as embedding_signature
             for index, (chunk_id, chunk_index, text, chunk_hash) in enumerate(chunks):
                 vector = None
                 if embeddings and index < len(embeddings):
@@ -427,7 +427,7 @@ def list_pending_rag_versions() -> list[dict] | None:
                 data->>'published_at',data->>'last_checked_at'
                 FROM rag_document_versions WHERE status='review_pending'
                 ORDER BY crawl_quality_score DESC NULLS LAST, created_at""")
-            from .rag import is_specific_source_url
+            from ..retrieval.rag import is_specific_source_url
             return [{
                 "version_id": row[0], "document_id": row[1], "content_hash": row[2], "created_at": str(row[3]),
                 "title": row[4], "publisher": row[5], "source_url": row[6], "category": row[7],

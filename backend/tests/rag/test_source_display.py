@@ -6,12 +6,12 @@ Deterministic dictionary only — no LLM/embedding calls anywhere.
 import re
 import unittest
 
-from app.ai_consultation import generate_rag_answer
-from app.config import settings
-from app.document_explanation import analyze_document_risks
-from app.rag import SAMPLE_DOCUMENTS, register_document, search_index, source_from_chunk
-from app.schemas import ConsultationResponse
-from app.source_display import SOURCE_DISPLAY
+from app.chat.ai_consultation import generate_rag_answer
+from app.core.config import settings
+from app.documents.document_explanation import analyze_document_risks
+from app.retrieval.rag import SAMPLE_DOCUMENTS, register_document, search_index, source_from_chunk
+from app.core.schemas import ConsultationResponse
+from app.retrieval.source_display import SOURCE_DISPLAY
 
 from documents.test_document_risks import DETAILED_RISKY_CONTRACT
 

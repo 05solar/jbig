@@ -34,9 +34,9 @@ sources.py (사이트별 SourceSpec)
 ## CLI
 
 ```powershell
-python -m app.crawl_official_docs --dry-run --domain moel.go.kr --limit 20   # 탐색만, DB 기록 없음
-python -m app.crawl_official_docs --review --category labor --limit 30       # review_pending 등록 (기본 모드)
-python -m app.crawl_official_docs --approved-only-index                      # 승인 문서만 임베딩
+python -m app.scripts.crawl_official_docs --dry-run --domain moel.go.kr --limit 20   # 탐색만, DB 기록 없음
+python -m app.scripts.crawl_official_docs --review --category labor --limit 30       # review_pending 등록 (기본 모드)
+python -m app.scripts.crawl_official_docs --approved-only-index                      # 승인 문서만 임베딩
 # 공통 옵션: --domain --category --limit --since 2025-01-01
 ```
 
@@ -69,8 +69,8 @@ python -m app.crawl_official_docs --approved-only-index                      # �
 
 | 주기 | 명령 | 목적 |
 |------|------|------|
-| daily | `python -m app.cli check-source-updates` | 등록 문서 원문 변경 감지(법령 24h·공지 6h·가이드 7d 간격은 next_check_at이 관리) |
-| weekly | `python -m app.crawl_official_docs --review --limit 30` | 신규 후보 탐색·등록 |
+| daily | `python -m app.scripts.cli check-source-updates` | 등록 문서 원문 변경 감지(법령 24h·공지 6h·가이드 7d 간격은 next_check_at이 관리) |
+| weekly | `python -m app.scripts.crawl_official_docs --review --limit 30` | 신규 후보 탐색·등록 |
 | 수시 | 관리자 검수 → approve/reject | 승인 시 자동 임베딩·색인 버전 증가 |
 
 ## 테스트

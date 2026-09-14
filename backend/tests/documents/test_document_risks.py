@@ -7,8 +7,8 @@ rule-based, and citations come from the reviewed lexical RAG corpus.
 import unittest
 from unittest.mock import patch
 
-from app.config import settings
-from app.document_explanation import analyze_document_risks, classify_document_type, explain_document, extract_key_terms
+from app.core.config import settings
+from app.documents.document_explanation import analyze_document_risks, classify_document_type, explain_document, extract_key_terms
 
 NORMAL_CONTRACT = (
     "표준근로계약서\n"
@@ -173,7 +173,7 @@ class RiskAnalysisTests(unittest.TestCase):
             self.assertTrue(item.sources, item.title)
 
     def test_ungrounded_rule_degrades_to_check_without_verdict(self) -> None:
-        with patch("app.document_explanation.search_official_documents", return_value=[]):
+        with patch("app.documents.document_explanation.search_official_documents", return_value=[]):
             items = analyze_document_risks(DETAILED_RISKY_CONTRACT, "employment_contract")
         for item in items:
             self.assertNotEqual(item.level, "WARNING", item.title)

@@ -8,7 +8,7 @@ follow the requested UI language.
 import re
 import unittest
 
-from app.document_explanation import analyze_document_risks
+from app.documents.document_explanation import analyze_document_risks
 
 from documents.test_document_risks import DETAILED_RISKY_CONTRACT
 
@@ -23,7 +23,7 @@ def explanation_text(item) -> str:
 
 class RiskLanguageTests(unittest.TestCase):
     def setUp(self) -> None:
-        from app.config import settings
+        from app.core.config import settings
         self.settings = settings
         self.original_flag = settings.rag_use_sample_documents_for_tests
         settings.rag_use_sample_documents_for_tests = True

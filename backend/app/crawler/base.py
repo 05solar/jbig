@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from ..schemas import Category
+from ..core.schemas import Category
 
 
 @dataclass(frozen=True)

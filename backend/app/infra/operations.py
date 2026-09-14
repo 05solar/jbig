@@ -6,8 +6,8 @@ import time
 from collections import Counter, defaultdict, deque
 from datetime import date
 
-from .config import settings
-from .schemas import ConsultationResponse, FeedbackRequest, OperationsStatus
+from ..core.config import settings
+from ..core.schemas import ConsultationResponse, FeedbackRequest, OperationsStatus
 
 _lock = threading.Lock()
 _requests: dict[str, deque[float]] = defaultdict(deque)

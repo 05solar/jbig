@@ -6,7 +6,7 @@
 |------|------|
 | 실행 | `.venv\Scripts\activate` 후 `uvicorn app.main:app --port 8000` |
 | 테스트 | `python -m unittest discover -s tests` (외부 API 0회, DB 없이도 통과) |
-| 색인 | `python -m app.index_rag [--reembed]`, `python -m app.embed_guides [--reembed]` |
+| 색인 | `python -m app.scripts.index_rag [--reembed]`, `python -m app.scripts.embed_guides [--reembed]` |
 | 설정 | `.env` (예시: `.env.example`) — OpenAI 키 없이도 전 기능 동작(로컬 임베딩·규칙 폴백) |
 
 | 폴더/파일 | 기능 |

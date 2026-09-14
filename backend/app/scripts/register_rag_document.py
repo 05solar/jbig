@@ -2,8 +2,8 @@
 """Register one reviewed text document without fetching a URL."""
 import argparse
 
-from .database import initialize_database, save_rag_document
-from .rag import content_hash, register_document
+from ..infra.database import initialize_database, save_rag_document
+from ..retrieval.rag import content_hash, register_document
 
 
 def main() -> None:

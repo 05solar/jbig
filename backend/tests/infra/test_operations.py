@@ -1,10 +1,10 @@
 # 레이트리밋·캐시·피드백 집계를 검증하는 테스트 파일
 import unittest
 
-from app.config import settings
-from app.consultation import consult
-from app.operations import allow_request, cache_key, get_cached, record_feedback, reset_for_tests, set_cached, status
-from app.schemas import FeedbackRequest
+from app.core.config import settings
+from app.chat.consultation import consult
+from app.infra.operations import allow_request, cache_key, get_cached, record_feedback, reset_for_tests, set_cached, status
+from app.core.schemas import FeedbackRequest
 
 
 class OperationsTests(unittest.TestCase):

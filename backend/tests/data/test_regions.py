@@ -4,7 +4,7 @@ import unittest
 from fastapi.testclient import TestClient
 
 from app.main import app
-from app.regions import resolve_region
+from app.data.regions import resolve_region
 
 client = TestClient(app)
 

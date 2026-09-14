@@ -5,12 +5,12 @@ import re
 from collections.abc import Callable
 from typing import Any
 
-from .config import settings
+from ..core.config import settings
 from .consultation import build_consultation
-from .data import GUIDES
-from .operations import acquire_ai_budget, record_ai_fallback
-from .rag import OfficialChunk, select_evidence, source_from_chunk
-from .schemas import ConsultationResponse, RAGSource
+from ..data.seed import GUIDES
+from ..infra.operations import acquire_ai_budget, record_ai_fallback
+from ..retrieval.rag import OfficialChunk, select_evidence, source_from_chunk
+from ..core.schemas import ConsultationResponse, RAGSource
 
 INSUFFICIENT_FOLLOW_UPS = {
     "ko": ["어떤 지역에서, 어떤 상황(체류·행정 또는 노동)인지 조금 더 알려주시면 관련 기관을 안내해 드릴 수 있습니다."],

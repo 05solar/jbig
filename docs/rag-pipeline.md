@@ -14,16 +14,16 @@
 
 | 경로 | 용도 |
 |------|------|
-| `python -m app.register_rag_document --id ... --text-file ...` | 검토 완료 텍스트 파일 등록 (CLI) |
+| `python -m app.scripts.register_rag_document --id ... --text-file ...` | 검토 완료 텍스트 파일 등록 (CLI) |
 | `POST /api/admin/rag/documents` (X-RAG-Admin-Token) | 운영 중 관리자 등록 (변경 시 review_pending 생성) |
-| `app/rag.py`의 `SAMPLE_DOCUMENTS` (25건) | 개발용 검토 문서 셋 — `python -m app.index_rag`로 색인 |
+| `app/retrieval/rag.py`의 `SAMPLE_DOCUMENTS` (25건) | 개발용 검토 문서 셋 — `python -m app.scripts.index_rag`로 색인 |
 
 등록 시 부여되는 메타데이터: `document_id`, `title`, `publisher`, `category(residency/labor)`, `document_type(law/notice/guide/operational)`, `source_url/source_domain`, `effective_from/until`, `content_hash`(sha256), `version/version_id`, 점검 주기(`next_check_at` — 법령 24h/공지 6h/안내 7일).
 
-### 변경 감지·승인 workflow (`app/updates.py`, `app/cli.py`)
+### 변경 감지·승인 workflow (`app/retrieval/updates.py`, `app/scripts/cli.py`)
 
 ```
-cron: python -m app.cli check-source-updates
+cron: python -m app.scripts.cli check-source-updates
   → 원문 fetch(크기 5MB·리다이렉트 3회 제한) → content_hash 비교
   → 변경 시 review_pending 버전 생성 (활성 버전은 유지)
 관리자: approve-document-version → 새 청크·임베딩 활성화, 이전 버전 superseded,
@@ -45,7 +45,7 @@ cron: python -m app.cli check-source-updates
 - 복합어 규칙: "임금체불→임금", "외국인등록증→등록증" 등 접두 토큰 추가
 - 불용어 제거, `[a-z0-9가-힣]{2,}` 토큰화
 
-## 4. 임베딩 (`app/embedding_service.py`)
+## 4. 임베딩 (`app/retrieval/embedding_service.py`)
 
 | 항목 | 값 |
 |------|-----|
@@ -75,10 +75,10 @@ guides                   가이드 + embedding vector(384) + embedding_model + c
 ## 6. 색인/재임베딩 명령
 
 ```bash
-python -m app.index_rag              # SAMPLE_DOCUMENTS 색인 (텍스트+토큰+임베딩)
-python -m app.index_rag --reembed    # 기존 청크의 임베딩·토큰만 재생성 (텍스트/상태/버전 무변경)
-python -m app.embed_guides           # 가이드 임베딩 (content_hash 변경분만)
-python -m app.embed_guides --reembed # 가이드 전체 재임베딩
+python -m app.scripts.index_rag              # SAMPLE_DOCUMENTS 색인 (텍스트+토큰+임베딩)
+python -m app.scripts.index_rag --reembed    # 기존 청크의 임베딩·토큰만 재생성 (텍스트/상태/버전 무변경)
+python -m app.scripts.embed_guides           # 가이드 임베딩 (content_hash 변경분만)
+python -m app.scripts.embed_guides --reembed # 가이드 전체 재임베딩
 ```
 
 두 명령 모두 실행 전 `verify_dimension()`으로 모델↔pgvector 차원 일치를 검사하며, 차원 변경 마이그레이션은 **비어 있는 컬럼만** 자동 수행하고 데이터가 있으면 명시적 오류를 남깁니다(자동 파괴 금지).

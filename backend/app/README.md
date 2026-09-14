@@ -1,60 +1,24 @@
-# backend/app/ — 애플리케이션 모듈 (기능별)
+# backend/app/ — 애플리케이션 모듈 (기능별 패키지)
 
-모듈은 아래 6개 기능 그룹으로 나뉩니다. RAG 파이프라인 상세는 [docs/rag-pipeline.md](../../docs/rag-pipeline.md) 참조.
+기능별 패키지로 분리되어 있으며, 각 폴더의 README.md에 파일별 상세 설명이 있습니다. RAG 파이프라인 상세는 [docs/rag-pipeline.md](../../docs/rag-pipeline.md) 참조.
 
-## ① 코어 (진입점·설정·스키마)
+## 구조
 
-| 파일 | 기능 |
-|------|------|
-| `main.py` | FastAPI 앱과 **모든 API 엔드포인트**. 상담 파이프라인 오케스트레이션(레이트리밋→캐시→규칙→RAG→답변), 가이드/기관 조회, 문서 분석, 지역 해석, 피드백, RAG 관리자 API. lifespan에서 DB 초기화 + 임베딩 워밍업 |
-| `config.py` | pydantic-settings 기반 전체 설정(`.env` 로드). RAG 가중치·후보 수·OCR·임베딩 provider 등 |
-| `schemas.py` | Pydantic 모델 전부 — Guide, Agency, RAGDocument/Chunk/Source, ConsultationRequest/Response, RiskItem, DocumentExplanation 등 API 계약 |
+| 폴더/파일 | 기능 | 파일 수 |
+|------|------|---------|
+| `main.py` | FastAPI 앱과 **모든 API 엔드포인트**. 상담 파이프라인 오케스트레이션(레이트리밋→캐시→규칙→RAG→답변), 가이드/기관 조회, 문서 분석, 지역 해석, 피드백, RAG 관리자 API. lifespan에서 DB 초기화 + 임베딩 워밍업. uvicorn 진입점(`app.main:app`)이라 루트에 위치 | 1 |
+| [`core/`](./core/README.md) | 전역 설정(`config.py`)·API Pydantic 스키마(`schemas.py`) | 2 |
+| [`retrieval/`](./retrieval/README.md) | RAG 검색·색인(`rag.py`), 공용 임베딩 서비스, 가이드 임베딩, 출처 표시 번역, 원문 변경 감지 | 5 |
+| [`chat/`](./chat/README.md) | 챗봇 상담 — 규칙 계층(`consultation.py`)과 LLM 계층(`ai_consultation.py`) | 2 |
+| [`documents/`](./documents/README.md) | 문서 분석 — 검토 파이프라인(`document_explanation.py`)과 PaddleOCR(`ocr.py`) | 2 |
+| [`data/`](./data/README.md) | 가이드·기관 시드 데이터(`seed.py`)와 전북 지역 해석(`regions.py`) | 2 |
+| [`infra/`](./infra/README.md) | PostgreSQL 접근 계층(`database.py`)과 인메모리 운영(`operations.py`) | 2 |
+| [`crawler/`](./crawler/README.md) | 공식문서 선별 수집기(목록→상세, robots·rate limit·중복제거·품질점수) — **review_pending으로만 등록**, 승인 후에만 chunk+임베딩 | 7 |
+| [`scripts/`](./scripts/README.md) | 운영 CLI(`python -m app.scripts.<이름>`) — DB 초기화·색인·임베딩·크롤링·버전 승인 | 6 |
 
-## ② RAG (검색·색인·임베딩)
+## 의존 방향
 
-| 파일 | 기능 |
-|------|------|
-| `rag.py` | RAG 핵심: URL 검증(SSRF 방지), 청크 분할(900자/120 오버랩), 토큰 정규화·동의어 사전(`QUERY_ALIASES`), **공용 DB 하이브리드 검색 `search_rag_db`**(lexical GIN 후보 + pgvector 후보 + 가중 병합 + 안정 랭킹 + TTL 캐시), 증거 선택 `select_evidence`, 권위/최신성 점수, 개발용 `SAMPLE_DOCUMENTS` 25건 |
-| `embedding_service.py` | **공용 임베딩 서비스** — local(sentence-transformers)/openai/none provider, lazy singleton, 차원 검증, 실패 시 lexical-only 폴백. 챗봇·OCR·가이드가 모두 이 하나를 사용 |
-| `embeddings.py` | 가이드 임베딩 색인(`index_guides`)과 가이드 시맨틱 검색(질문→pgvector 코사인) |
-| `updates.py` | 공식 원문 변경 감지(cron용): 안전한 fetch → 해시 비교 → review_pending 버전 생성 |
-
-## ③ 상담 (챗봇)
-
-| 파일 | 기능 |
-|------|------|
-| `consultation.py` | 결정적 규칙 계층: 언어 감지(한/영/베), 가이드 키워드 매칭(`KEYWORDS`), 기관 연결, 긴급(산재→119) 안내 |
-| `ai_consultation.py` | LLM 계층: RAG 근거 답변 생성(관련도·권위 게이트, 민감주제 거부, 증거 선택 적용), 의미적 가이드 분류, grounded 답변, 선택적 쿼리 재작성. 개인정보 마스킹 후 전송, 실패 시 규칙 폴백 |
-
-## ④ 문서 분석 (OCR·위험 검토)
-
-| 파일 | 기능 |
-|------|------|
-| `document_explanation.py` | 문서 검토 파이프라인: 텍스트 추출→마스킹→유형 분류→주요 조건 추출→**규칙 기반 위험 스크리닝**(위약금·삭감·가산수당·근로시간·연차·주휴·내부규정·최저임금 실계산)→risk_type별 DB RAG 근거 연결→7단 RiskItem(3개 언어 `RISK_TEXTS`)→LLM 요약(OFFICIAL_EVIDENCE 전달, 생성 URL 제거) |
-| `ocr.py` | PaddleOCR 로컬 엔진: 이미지 전처리, 스캔 PDF 페이지 렌더링(PyMuPDF), 신뢰도 계산, 저신뢰 재촬영 안내, 엔진 부재 시 폴백 |
-
-## ⑤ 데이터·인프라
-
-| 파일 | 기능 |
-|------|------|
-| `data.py` | 시드 데이터: 가이드 13종(3개 언어 완역, 대상·실수·관련 공식자료 포함), 기관 5곳 |
-| `regions.py` | 전북 14개 시·군 좌표 → 지역명 결정적 해석(외부 지오코딩 API 없음) |
-| `database.py` | PostgreSQL 접근 계층 전부(실패 허용·메모리 폴백): 스키마 idempotent 마이그레이션, RAG 문서/청크 저장·후보 검색(`fetch_lexical_candidates`)·벡터 검색, 버전 승인/거절, 재임베딩, 상담·피드백·AI 예산 |
-| `operations.py` | 인메모리 운영 계층: 레이트리밋(슬라이딩 윈도), 상담 캐시, 일일 AI 예산, 지표, IP 해시 |
-
-## ⑥ 공식문서 크롤러
-
-| 파일 | 기능 |
-|------|------|
-| [`crawler/`](./crawler/README.md) | 공식 사이트 선별 수집기(목록→상세, robots·rate limit·중복제거·품질점수) — **review_pending으로만 등록**, 승인 후에만 chunk+로컬 임베딩. 상세: [docs/crawler.md](../../docs/crawler.md) |
-
-## ⑦ CLI 스크립트
-
-| 파일 | 기능 |
-|------|------|
-| `cli.py` | RAG 운영: check-source-updates / list-pending-updates / approve·reject-document-version(승인 시 자동 임베딩) |
-| `crawl_official_docs.py` | 공식문서 크롤링: `--dry-run`(탐색만) / `--review`(review_pending 등록) / `--approved-only-index`(승인 문서 임베딩), `--domain --category --limit --since` |
-| `index_rag.py` | 공식 문서 색인, `--reembed`로 임베딩·토큰 재생성 |
-| `embed_guides.py` | 가이드 임베딩, `--reembed` 지원 |
-| `db_init.py` | DB 스키마 생성·시드 |
-| `register_rag_document.py` | 검토 텍스트 파일 1건 등록 |
+- `core`(설정·스키마)는 최하위 계층으로 다른 패키지에 의존하지 않고, 모든 패키지가 참조합니다.
+- `data`는 `core`만 참조합니다.
+- 기능 패키지(`chat`·`documents`·`retrieval`·`crawler`)는 `core`·`data`·`infra`를 참조하며, `retrieval`↔`infra` 등 상호 참조는 지연 import로만 이루어집니다(순환 방지).
+- `main.py`와 `scripts/`가 최상위에서 각 기능 패키지를 조립합니다.

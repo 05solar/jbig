@@ -9,7 +9,7 @@ from __future__ import annotations
 import re
 from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
-from ..rag import content_hash
+from ..retrieval.rag import content_hash
 
 TRACKING_PARAMS = ("utm_", "ga_", "fbclid", "gclid", "ref", "referer", "token", "sid", "s_id", "menuno_top")
 

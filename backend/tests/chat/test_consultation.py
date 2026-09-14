@@ -1,7 +1,7 @@
 # 언어 감지와 키워드 가이드 매칭 규칙을 검증하는 테스트 파일
 import unittest
 
-from app.consultation import consult, detect_language, find_guide, find_guides
+from app.chat.consultation import consult, detect_language, find_guide, find_guides
 
 
 class ConsultationTests(unittest.TestCase):
