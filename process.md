@@ -2,6 +2,12 @@
 
 작업(명령) 수행 시마다 이 파일에 간략한 내역을 추가합니다. 규칙은 [agent.md](./agent.md) 참조. 최신 항목이 위.
 
+## 2026-09-14 — 루트 README 개편·실행 화면 스크린샷 추가
+- 실제 앱 구동(백엔드 8001·프론트 3000) 후 주요 화면 6종 캡처 → docs/images/ (홈·AI상담 답변·출처 카드·문서검토·가이드·기관찾기)
+- 루트 README.md를 프로젝트 소개 중심으로 재작성: 상단 스크린샷, 핵심 원칙(공식정보 기반·출처 제공·개인정보 보호), 기능별 화면 설명, 기술 구성, 하단 실행 방법
+- 기존 README의 RAG 운영 상세는 docs/rag-pipeline.md·crawler.md 링크로 정리
+- 검증: 캡처 시 브라우저 콘솔 에러 0건, 상담 API 실응답 확인
+
 ## 2026-09-14 — backend/app 기능별 패키지 재구성
 - 평면 구조였던 backend/app 21개 모듈을 7개 기능 패키지로 분리: core(설정·스키마), data(시드·지역, data.py→seed.py), chat(규칙·LLM 상담), documents(OCR·위험 검토), retrieval(RAG·임베딩·출처 표시·원문 갱신), infra(DB·운영), scripts(운영 CLI 6종). main.py는 uvicorn 진입점(`app.main:app`)이라 루트 유지, crawler/는 기존 유지
 - 각 패키지에 역할 설명 README.md·한국어 주석 __init__.py 추가, app/README.md를 구조 인덱스로 개편

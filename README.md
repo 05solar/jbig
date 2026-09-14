@@ -1,168 +1,133 @@
-# JB Bridge AI
+# JBIG — Jeonbuk International Gateway
 
-전북 거주 외국인 근로자와 유학생을 위한 생성형 AI 정착지원 플랫폼입니다.
+전북에 거주하는 외국인 근로자와 유학생을 위한 **생성형 AI 정착지원 플랫폼**입니다.
+체류·행정과 노동 문제를 모국어(한국어·영어·베트남어)로 질문하면, 검토된 공식 문서에 근거한 답변과 출처, 그리고 도움받을 수 있는 지원기관을 안내합니다.
 
-> 📚 **문서**: 아키텍처·RAG 파이프라인 설명은 [docs/](./docs/README.md), 각 코드 폴더의 파일별 기능 설명은 폴더 안의 README.md를 참고하세요.
+![JBIG 홈 화면](./docs/images/home.png)
 
-현재 MVP 범위:
+## 왜 만들었나
 
-- 분야: 체류·행정, 노동
-- 기능: 다국어 AI 상담, 상황별 가이드, 행정문서 설명, 맞춤형 기관 연결
-- 초기 언어: 한국어, 영어, 베트남어
+낯선 언어와 제도 때문에 외국인 주민은 임금체불·계약 문제·체류 연장 같은 상황에서 정확한 정보를 찾기 어렵습니다. JBIG는 세 가지 원칙으로 이 문제를 풉니다.
 
-## 프로젝트 구조
+- **공식정보 기반** — 상담마다 웹을 검색하지 않습니다. 관리자가 검토·승인한 공식 문서(법령·고용노동부·출입국 안내 등)만 RAG로 검색해 답변합니다. 근거가 부족하면 추측하지 않고 공식기관 확인을 안내합니다.
+- **답변 출처 제공** — 모든 RAG 답변에 사용된 공식 자료의 문서명·발행기관·관련도·권위 점수·확인일을 함께 표시합니다. 출처 URL은 모델이 생성하지 않고 서버가 검색 메타데이터에서 구성합니다.
+- **개인정보 보호** — 문서 OCR은 PaddleOCR로 전부 로컬에서 수행되어 원본 이미지가 외부로 나가지 않고, LLM 호출 전에 여권번호·전화번호 등 민감정보를 마스킹합니다.
+
+## 주요 기능
+
+### 1. 다국어 AI 상담
+
+질문의 언어를 감지하고, 하이브리드 검색(키워드 + pgvector 벡터)으로 찾은 공식 문서 근거로 답변합니다. LLM 호출이 실패해도 규칙 기반 답변으로 폴백해 서비스가 끊기지 않습니다.
+
+![AI 상담 챗봇 — 임금체불 질문에 대한 공식 문서 기반 답변](./docs/images/chat.png)
+
+답변 하단에는 사용된 공식 자료가 신뢰도·관련도·권위 점수와 함께 표시됩니다.
+
+![답변에 사용한 공식 자료 출처 카드](./docs/images/chat-sources.png)
+
+### 2. 고용·행정 문서 검토
+
+근로계약서, 임금명세서 등을 업로드하면 로컬 OCR로 텍스트를 추출하고, 위약금·최저임금 미달·가산수당 누락 같은 위험 조항을 규칙 기반으로 스크리닝한 뒤 공식 기준 문서와 비교해 설명합니다.
+
+![고용·행정 문서 검토 업로드 화면](./docs/images/documents.png)
+
+### 3. 상황별 가이드
+
+외국인등록, 체류기간 연장, 임금체불 대응 등 13종의 절차 가이드를 3개 언어로 제공합니다. 필요한 서류와 단계, 흔한 실수까지 정리되어 있습니다.
+
+![상황별 가이드 목록](./docs/images/guides.png)
+
+### 4. 맞춤형 기관 연결
+
+상황(체류·노동·산업재해·통역)과 현재 위치에 맞는 지원기관을 안내합니다. 좌표→지역 해석은 외부 API 없이 서버에서 결정적으로 처리합니다.
+
+![내게 맞는 지원기관 찾기](./docs/images/agencies.png)
+
+## 기술 구성
+
+| 구분 | 내용 |
+|------|------|
+| 프론트엔드 | Next.js (App Router) + TypeScript — 다국어 UI(ko/en/vi) |
+| 백엔드 | FastAPI — 상담 파이프라인(레이트리밋→캐시→규칙→RAG→LLM), 문서 분석, 기관/가이드 API |
+| 검색(RAG) | 저장형 RAG: 검토·승인 문서만 색인. lexical(GIN) + 벡터(pgvector) 하이브리드 검색, 권위/최신성 랭킹 |
+| 임베딩 | 로컬 sentence-transformers(384차원) 기본, OpenAI 임베딩 선택 가능 — 키 없이도 전 기능 동작 |
+| OCR | PaddleOCR 로컬 엔진(이미지·스캔 PDF), 저신뢰 시 재촬영 안내 |
+| 저장소 | PostgreSQL + pgvector — 미기동 시 인메모리 폴백으로 개발 가능 |
+| 수집 | 공식 사이트 선별 크롤러 — 수집물은 `review_pending`으로만 등록, 사람이 승인해야 검색에 반영 |
 
 ```text
-jb-bridge-ai/
-├── frontend/   # Next.js 사용자 웹
-├── backend/    # FastAPI API
+jbig/
+├── frontend/   # Next.js 사용자 웹 (chat / documents / guides / agencies)
+├── backend/    # FastAPI API — app/ 아래 기능별 패키지(core·chat·documents·retrieval·infra·crawler·scripts)
+├── docs/       # 아키텍처·RAG 파이프라인·크롤러 문서
 └── docker-compose.yml
 ```
 
-## 1. 백엔드 실행
+> 📚 **더 읽기**: 아키텍처와 파이프라인 상세는 [docs/](./docs/README.md), 각 코드 폴더의 파일별 설명은 폴더 안의 README.md를 참고하세요.
+
+---
+
+## 실행 방법
+
+### 요구사항
+
+- Python 3.12+, Node.js 20+
+- (선택) Docker — PostgreSQL/pgvector 실행용
+- (선택) OpenAI API 키 — 없어도 로컬 임베딩·규칙 폴백으로 전 기능이 동작합니다
+
+### 1. 백엔드
 
 ```bash
 cd backend
-python3 -m venv .venv
-source .venv/bin/activate
+python -m venv .venv
+source .venv/bin/activate        # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
+cp .env.example .env             # 필요 시 키·설정 수정
 uvicorn app.main:app --reload --port 8000
 ```
 
 API 문서: http://localhost:8000/docs
 
-## 2. 프론트엔드 실행
+### 2. 프론트엔드
 
 새 터미널에서 실행합니다.
 
 ```bash
 cd frontend
 npm install
-cp .env.example .env.local
+cp .env.example .env.local       # NEXT_PUBLIC_API_URL을 백엔드 포트에 맞춤
 npm run dev
 ```
 
 웹: http://localhost:3000
 
-## 3. PostgreSQL 실행(선택)
-
-Docker가 설치된 환경에서 실행합니다.
+### 3. PostgreSQL (선택)
 
 ```bash
 docker compose up -d db
 ```
 
-PostgreSQL이 연결되지 않아도 가이드·샘플 RAG 문서로 개발할 수 있습니다. 운영에서는
-PostgreSQL/pgvector를 사용해 검토된 문서와 임베딩을 저장하세요.
+PostgreSQL이 없어도 가이드·샘플 RAG 문서의 인메모리 폴백으로 개발할 수 있습니다. 운영에서는 pgvector에 검토 문서와 임베딩을 저장하세요. 새 환경에서는 `python -m app.scripts.db_init`(또는 서버 시작 시 lifespan)이 idempotent 마이그레이션으로 스키마를 생성합니다.
 
-## 4. 공식 문서 RAG 색인
-
-RAG는 상담 요청마다 웹을 크롤링하지 않습니다. `backend/app/retrieval/rag.py`에 등록·검토된
-공식 문서만 색인하며, URL은 `.env`의 `RAG_ALLOWED_DOMAINS` 허용목록에 있어야 합니다.
-현재는 PDF/HWP 자동 수집 대신 정제된 텍스트와 메타데이터를 등록하는 인터페이스와
-개발용 샘플 문서를 제공합니다.
+### 4. RAG 색인·운영 (선택)
 
 ```bash
 cd backend
-source .venv/bin/activate
-python -m app.scripts.index_rag
-```
-
-검토자가 정제한 텍스트 파일을 공식 URL과 함께 등록할 수도 있습니다(명령은 URL을
-가져오지 않습니다).
-
-```bash
-python -m app.scripts.register_rag_document \
-  --id moel-example --title "공식 문서 제목" --publisher "고용노동부" \
-  --category labor --url https://www.moel.go.kr/ --text-file ./reviewed.txt
-```
-
-`initialize_database()`가 기존 테이블을 보존하는 idempotent 마이그레이션을 수행합니다.
-새 환경에서는 `python -m app.scripts.db_init` 또는 서버 시작 시 `lifespan`에서
-`rag_documents`와 `rag_chunks(vector(...))`를 생성합니다. 운영 DB에서는 먼저 백업 후
-마이그레이션을 실행하세요.
-
-같은 `document_id`의 콘텐츠 해시가 같으면 저장을 건너뛰고, 내용이 바뀌면 문서와
-청크를 갱신합니다. OpenAI 키가 있으면 `EMBEDDING_MODEL`과 `EMBEDDING_DIMENSIONS`로
-설정한 임베딩을 pgvector에 저장하고, 상담 시 키워드 결과와 벡터 결과를 결합합니다.
-키가 없을 때도 동일한 검토 문서의 안전한 발췌 fallback이 동작합니다.
-
-RAG 관련 주요 환경변수:
-
-```text
-RAG_TOP_K=6
-RAG_SIMILARITY_THRESHOLD=0.35
-RAG_DEBUG_ENABLED=false
-RAG_ALLOWED_DOMAINS=law.go.kr,open.law.go.kr,moj.go.kr,immigration.go.kr,hikorea.go.kr,moel.go.kr,minimumwage.go.kr,nlrc.go.kr,comwel.or.kr,jeonbuk.go.kr,liveinkorea.kr
-RAG_INDEX_VERSION=1
-RAG_ADMIN_TOKEN=
-```
-
-관리자 등록 API는 `RAG_ADMIN_TOKEN`이 설정된 경우에만 활성화됩니다.
-
-```bash
-curl -X POST http://localhost:8000/api/admin/rag/documents \
-  -H "Content-Type: application/json" \
-  -H "X-RAG-Admin-Token: $RAG_ADMIN_TOKEN" \
-  -d @reviewed-document.json
-```
-
-`GET /api/admin/rag/status`로 등록 문서 수와 활성 문서 수를 확인할 수 있습니다.
-토큰을 설정하지 않은 개발 환경에서는 관리자 API가 비활성화되며, 기존의 로컬 색인
-명령을 사용할 수 있습니다.
-
-## 5. 업데이트형 저장 RAG 운영
-
-상담 요청은 인터넷을 검색하지 않습니다. 검토·색인된 활성 버전만 사용하고, 공식
-원문 변경 확인은 별도 CLI 또는 cron에서 실행합니다.
-
-```bash
-cd backend
-python -m app.scripts.cli check-source-updates
-python -m app.scripts.cli list-pending-updates
+python -m app.scripts.index_rag                    # 개발용 샘플 공식 문서 색인
+python -m app.scripts.embed_guides                 # 가이드 임베딩
+python -m app.scripts.crawl_official_docs --review # 공식 사이트에서 후보 수집(review_pending 등록)
+python -m app.scripts.cli check-source-updates     # 등록 문서 원문 변경 감지(cron용)
+python -m app.scripts.cli list-pending-updates     # 검토 대기 버전 조회
 python -m app.scripts.cli approve-document-version <version-id> --reviewed-by admin --note "검토 완료"
-python -m app.scripts.cli reject-document-version <version-id> --reviewed-by admin --note "변경 근거 확인 필요"
 ```
 
-변경이 없으면 마지막 확인 시각만 갱신합니다. 변경이 있으면 기존 활성 버전을
-그대로 둔 채 `review_pending` 버전을 생성합니다. 승인 전에는 새 버전이 상담 검색에
-들어가지 않으며, 승인 시 새 청크·임베딩을 활성화하고 이전 버전을 `superseded`로
-기록한 뒤 색인 버전을 증가시킵니다. 상담 캐시는 색인 버전을 키에 포함하므로 승인
-후 이전 RAG 답변이 재사용되지 않습니다.
+수집·변경 감지된 문서는 승인 전까지 상담 검색에 들어가지 않습니다. 전체 워크플로는 [docs/rag-pipeline.md](./docs/rag-pipeline.md)와 [docs/crawler.md](./docs/crawler.md), 관리자 등록 API(`RAG_ADMIN_TOKEN`)와 환경변수 목록은 [backend/.env.example](./backend/.env.example)을 참고하세요.
 
-문서 유형별 기본 점검 주기는 법령 24시간, 공지 6시간, 일반 안내 7일입니다.
-`SOURCE_CHECK_INTERVAL_LAW`, `SOURCE_CHECK_INTERVAL_NOTICE`,
-`SOURCE_CHECK_INTERVAL_GUIDE`로 변경할 수 있습니다. 운영에서는 cron 예를 들어
-다음처럼 실행합니다.
-
-```cron
-0 * * * * cd /path/to/web/backend && .venv/bin/python -m app.scripts.cli check-source-updates
-```
-
-접속 실패 시 기존 문서는 삭제하지 않고 `fetch_failed`와 실패 원인을 기록합니다.
-기존 문서는 계속 검색되며 출처에는 최신성 재확인 필요 상태가 표시됩니다.
-운영시간·당일 접수 여부처럼 변동성이 큰 정보는 저장형 RAG로 확정하지 않고 공식
-사이트 또는 전화로 실시간 확인하도록 안내해야 합니다.
-
-개발용 검색 점검 API는 `RAG_DEBUG_ENABLED=true`일 때만 사용할 수 있습니다.
-`GET /api/rag/search?q=숙소비%20공제` 응답은 내부 청크를 최소 메타데이터로 보여주며,
-운영 환경에서는 비활성 상태로 두세요.
-
-상담 응답의 `answer_mode`는 `rag`, `ai`, `rules`(기존 호환),
-`insufficient_evidence` 등으로 구분됩니다. RAG 응답의 출처 URL·문서명·기관명·확인일은
-모델이 생성하지 않고 검색 결과 메타데이터에서 서버가 구성합니다. 근거가 없으면
-추측하지 않고 추가 정보 또는 공식기관 확인을 안내합니다.
-
-각 출처에는 의미적 검색 관련도와 별도로 공식 도메인·발행기관·문서 유형·최신성에
-기반한 `authority_score`, `trust_level`(`high`/`medium`/`low`)과 판단 이유가 포함됩니다.
-법령·고시 등 검증된 공식 자료를 우선하며, 오래 확인되지 않았거나 운영성 정보인
-자료는 신뢰도와 최신성 경고를 표시합니다. 신뢰도가 낮은 자료만 검색된 경우에는
-확정적인 RAG 답변을 생성하지 않고 공식기관 확인을 안내합니다.
+### 5. 테스트
 
 ```bash
 cd backend
-python -m unittest discover -s tests -v
+python -m unittest discover -s tests   # 외부 API 0회, DB 없이 전부 통과
 cd ../frontend
-./node_modules/.bin/tsc --noEmit
-npm run build
+npx tsc --noEmit && npm run build
 ```
